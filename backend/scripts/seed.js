@@ -6,6 +6,8 @@ const Book = require('../models/Book');
 const Rental = require('../models/Rental');
 const ForumPost = require('../models/ForumPost');
 const Review = require('../models/Review');
+const BookRequest = require('../models/BookRequest');
+const Hub = require('../models/Hub');
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -207,12 +209,14 @@ const seedDB = async () => {
     console.log('Connected to MongoDB.');
 
     // Clear existing data
-    console.log('Clearing old data (Books, Users, Rentals, ForumPosts, Reviews)...');
+    console.log('Clearing old data (Books, Users, Rentals, ForumPosts, Reviews, Requests, Hubs)...');
     await Book.deleteMany({});
     await User.deleteMany({});
     await Rental.deleteMany({});
     await ForumPost.deleteMany({});
     await Review.deleteMany({});
+    await BookRequest.deleteMany({});
+    await Hub.deleteMany({});
     console.log('Data cleared.');
 
     // 1. Create Nagpur Admin User
@@ -281,6 +285,54 @@ const seedDB = async () => {
     });
     await post.save();
     console.log('Sample forum post created.');
+
+    // 5. Create some dummy book requests
+    console.log('Creating sample book requests...');
+    const req1 = new BookRequest({
+      title: "The Blue Umbrella",
+      author: "Ruskin Bond",
+      notes: "Kids in our society love Ruskin Bond stories, would love to have this short read!",
+      suggestedBy: testUser._id,
+      status: "pending"
+    });
+    const req2 = new BookRequest({
+      title: "The God of Small Things",
+      author: "Arundhati Roy",
+      notes: "Looking forward to reading this classic Booker prize winner.",
+      suggestedBy: adminUser._id,
+      status: "fulfilled",
+      fulfilledBy: testUser._id
+    });
+    const req3 = new BookRequest({
+      title: "Malgudi Days",
+      author: "R.K. Narayan",
+      notes: "A must-have for every neighborhood shelf in India.",
+      suggestedBy: testUser._id,
+      status: "pending"
+    });
+    await Promise.all([req1.save(), req2.save(), req3.save()]);
+    console.log('Book requests seeded.');
+
+    // 6. Create some dummy active hubs
+    console.log('Creating neighborhood hubs...');
+    const hub1 = new Hub({
+      hostUser: adminUser._id,
+      area: "Dharampeth",
+      address: "Flat 401, Vardhaman Heights, Dharampeth",
+      contactPhone: "9876543210",
+      description: "Hi! I am Rashi. Happy to host the Dharampeth hub. Storing books in a clean, pet-free shelf. Let's swap books!",
+      status: "active"
+    });
+    const hub2 = new Hub({
+      hostUser: testUser._id,
+      area: "Sitabuldi",
+      address: "12, Jhansi Rani Square, Sitabuldi",
+      contactPhone: "9823456789",
+      description: "College student hosting drop-off hub for south Nagpur readers.",
+      status: "active"
+    });
+    await Promise.all([hub1.save(), hub2.save()]);
+    console.log('Neighborhood hubs seeded.');
 
     console.log('Database seeding completed successfully! 🎉');
     process.exit(0);

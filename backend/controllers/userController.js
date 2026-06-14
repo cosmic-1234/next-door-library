@@ -130,4 +130,25 @@ const searchUsers = async (req, res) => {
   }
 };
 
-module.exports = { getUserProfile, updateProfile, toggleFollow, getFriendsFeed, searchUsers };
+// @desc    Update reading challenge goal
+// @route   PATCH /api/users/me/challenge
+const updateReadingChallenge = async (req, res) => {
+  try {
+    const { goal } = req.body;
+    if (goal === undefined || isNaN(goal) || goal < 0) {
+      return res.status(400).json({ success: false, message: 'Invalid reading challenge goal' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: { readingChallengeGoal: Number(goal) } },
+      { new: true }
+    ).select('-password');
+
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+module.exports = { getUserProfile, updateProfile, toggleFollow, getFriendsFeed, searchUsers, updateReadingChallenge };

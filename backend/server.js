@@ -40,6 +40,8 @@ app.use('/api/rentals', require('./routes/rentals'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/forum', require('./routes/forum'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/requests', require('./routes/requests'));
+app.use('/api/hubs', require('./routes/hubs'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Next Door Library API is running' }));

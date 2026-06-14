@@ -16,7 +16,7 @@ const STATUS_CONFIG = {
 };
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [rentals, setRentals] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +47,16 @@ export default function Dashboard() {
       toast.success('Book marked as returned!');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to process return');
+    }
+  };
+
+  const handleUpdateChallenge = async (goal) => {
+    try {
+      const res = await api.patch('/users/me/challenge', { goal });
+      updateUser(res.data.user);
+      toast.success('Reading challenge goal updated!');
+    } catch (err) {
+      toast.error('Failed to update reading challenge');
     }
   };
 
@@ -82,6 +92,82 @@ export default function Dashboard() {
                 <h1 className="dashboard-title">Hello, {user?.name?.split(' ')[0]} 👋</h1>
                 {user?.bio && <p className="dashboard-bio">"{user.bio}"</p>}
               </div>
+            </div>
+          </motion.div>
+
+          {/* Reading Challenge Banner */}
+          <motion.div 
+            className="challenge-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <div className="challenge-icon-area">🏆</div>
+            <div className="challenge-details">
+              {(!user?.readingChallengeGoal || user.readingChallengeGoal === 0) ? (
+                <div>
+                  <h3 className="challenge-title-text">Start your 2026 Reading Challenge!</h3>
+                  <p className="challenge-desc-text" style={{ marginBottom: '12px' }}>Set a goal to slow down, build empathy, and enjoy more books this year.</p>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const goalVal = e.target.elements.goalInput.value;
+                    if (goalVal) handleUpdateChallenge(Number(goalVal));
+                  }} className="challenge-form">
+                    <input 
+                      name="goalInput" 
+                      type="number" 
+                      min="1" 
+                      placeholder="e.g. 12" 
+                      className="form-input challenge-input" 
+                      required 
+                    />
+                    <button type="submit" className="btn btn-primary btn-sm">Set Goal</button>
+                  </form>
+                </div>
+              ) : (
+                <div style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <h3 className="challenge-title-text">2026 Reading Challenge</h3>
+                      <p className="challenge-desc-text">
+                        You've completed <strong>{booksRead}</strong> of <strong>{user.readingChallengeGoal}</strong> book{user.readingChallengeGoal > 1 ? 's' : ''}!
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        const newGoal = prompt('Change your 2026 reading goal:', user.readingChallengeGoal);
+                        if (newGoal && !isNaN(newGoal) && Number(newGoal) > 0) {
+                          handleUpdateChallenge(Number(newGoal));
+                        }
+                      }} 
+                      className="btn btn-ghost btn-sm"
+                      style={{ padding: '4px 10px', fontSize: '11px' }}
+                    >
+                      ✏️ Edit Goal
+                    </button>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="challenge-progress-bar-wrap">
+                    <div 
+                      className="challenge-progress-bar" 
+                      style={{ 
+                        width: `${Math.min(100, (booksRead / user.readingChallengeGoal) * 100)}%`,
+                        background: booksRead >= user.readingChallengeGoal ? 'var(--sage)' : 'var(--copper)'
+                      }} 
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    <span>{Math.round((booksRead / user.readingChallengeGoal) * 100)}% Complete</span>
+                    {booksRead >= user.readingChallengeGoal ? (
+                      <span style={{ color: 'var(--sage)', fontWeight: 600 }}>🎉 Goal achieved! Awesome job!</span>
+                    ) : (
+                      <span>{Math.max(0, user.readingChallengeGoal - booksRead)} more book{user.readingChallengeGoal - booksRead > 1 ? 's' : ''} to go</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -510,6 +596,68 @@ export default function Dashboard() {
         .wishlist-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); line-height: 1.3; margin-bottom: 2px; }
         .wishlist-author { font-size: var(--text-xs); color: var(--text-muted); font-style: italic; margin-bottom: 4px; }
         .wishlist-price { font-size: var(--text-xs); color: var(--copper); font-weight: 500; }
+
+        /* Reading Challenge Styles */
+        .challenge-card {
+          background: var(--bg-card);
+          border: 1px solid rgba(196,144,106,0.15);
+          border-radius: var(--radius-lg);
+          padding: 24px;
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          margin-bottom: 32px;
+          box-shadow: var(--shadow-sm);
+        }
+        .challenge-icon-area {
+          font-size: 32px;
+          background: rgba(201, 168, 76, 0.1);
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border: 1.5px dashed rgba(201, 168, 76, 0.4);
+        }
+        .challenge-details {
+          flex: 1;
+        }
+        .challenge-title-text {
+          font-family: var(--font-serif);
+          font-size: var(--text-lg);
+          color: var(--text-primary);
+          font-weight: 600;
+          margin-bottom: 2px;
+        }
+        .challenge-desc-text {
+          font-size: var(--text-xs);
+          color: var(--text-secondary);
+        }
+        .challenge-form {
+          display: flex;
+          gap: 10px;
+          margin-top: 10px;
+        }
+        .challenge-input {
+          padding: 6px 12px;
+          max-width: 100px;
+          font-size: var(--text-sm);
+        }
+        .challenge-progress-bar-wrap {
+          width: 100%;
+          height: 8px;
+          background: rgba(44, 24, 16, 0.08);
+          border-radius: var(--radius-full);
+          overflow: hidden;
+          margin-top: 10px;
+        }
+        .challenge-progress-bar {
+          height: 100%;
+          border-radius: var(--radius-full);
+          transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
 
         @media (max-width: 768px) {
           .dashboard-stats { grid-template-columns: repeat(2, 1fr); }

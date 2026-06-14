@@ -336,6 +336,21 @@ export default function BookDetail() {
   const isAvailable = book.availableCopies > 0;
   const conditionColor = { New: 'var(--sage)', Good: 'var(--copper)', Fair: 'var(--text-muted)' }[book.condition];
 
+  const getRatingDistribution = () => {
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach(r => {
+      if (counts[r.rating] !== undefined) {
+        counts[r.rating]++;
+      }
+    });
+    const total = reviews.length || 1;
+    return Object.keys(counts).reverse().map(rating => ({
+      rating: Number(rating),
+      count: counts[rating],
+      percentage: Math.round((counts[rating] / total) * 100)
+    }));
+  };
+
   return (
     <div className="book-detail">
       <div className="container">
@@ -474,6 +489,32 @@ export default function BookDetail() {
         <div className="book-reviews-section">
           <h2 className="reviews-title">Reader Reviews</h2>
           <hr className="divider" />
+
+          {/* Rating Distribution Chart Summary */}
+          {reviews.length > 0 && (
+            <div className="reviews-summary-card">
+              <div className="average-rating-large">
+                <span className="avg-num">{book.averageRating.toFixed(1)}</span>
+                <div className="stars" style={{ justifyContent: 'center', marginBottom: '4px' }}>
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <FiStar key={s} size={16} fill={s <= Math.round(book.averageRating) ? 'currentColor' : 'none'} />
+                  ))}
+                </div>
+                <span className="total-revs">{reviews.length} review{reviews.length > 1 ? 's' : ''}</span>
+              </div>
+              <div className="rating-bars-list">
+                {getRatingDistribution().map(item => (
+                  <div key={item.rating} className="rating-bar-row">
+                    <span className="bar-label">{item.rating} Star</span>
+                    <div className="bar-track">
+                      <div className="bar-fill" style={{ width: `${item.percentage}%` }} />
+                    </div>
+                    <span className="bar-percent">{item.percentage}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Write a review */}
           {user && (
@@ -786,6 +827,84 @@ export default function BookDetail() {
           grid-template-columns: repeat(4, 1fr);
           gap: 24px;
           margin-top: 24px;
+        }
+
+        /* Reviews Summary Chart Card */
+        .reviews-summary-card {
+          display: grid;
+          grid-template-columns: 180px 1fr;
+          gap: 32px;
+          background: var(--bg-card);
+          border: 1px solid rgba(196,144,106,0.15);
+          border-radius: var(--radius-lg);
+          padding: 24px;
+          margin-bottom: 28px;
+          align-items: center;
+        }
+        .average-rating-large {
+          text-align: center;
+          border-right: 1px solid rgba(196,144,106,0.15);
+          padding-right: 16px;
+        }
+        .avg-num {
+          font-family: var(--font-serif);
+          font-size: 3.5rem;
+          font-weight: 700;
+          color: var(--brown-rich);
+          line-height: 1;
+          display: block;
+          margin-bottom: 4px;
+        }
+        .total-revs {
+          font-size: var(--text-xs);
+          color: var(--text-muted);
+        }
+        .rating-bars-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .rating-bar-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-size: var(--text-xs);
+          color: var(--text-secondary);
+        }
+        .bar-label {
+          width: 50px;
+          text-align: right;
+          flex-shrink: 0;
+        }
+        .bar-track {
+          flex: 1;
+          height: 8px;
+          background: rgba(44, 24, 16, 0.06);
+          border-radius: var(--radius-full);
+          overflow: hidden;
+        }
+        .bar-fill {
+          height: 100%;
+          background: var(--gold);
+          border-radius: var(--radius-full);
+        }
+        .bar-percent {
+          width: 35px;
+          text-align: left;
+          flex-shrink: 0;
+          color: var(--text-muted);
+        }
+        @media (max-width: 640px) {
+          .reviews-summary-card {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
+          .average-rating-large {
+            border-right: none;
+            border-bottom: 1px solid rgba(196,144,106,0.15);
+            padding-right: 0;
+            padding-bottom: 16px;
+          }
         }
 
         @media (max-width: 1024px) {

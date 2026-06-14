@@ -13,6 +13,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Forum from './pages/Forum';
 import FriendsFeed from './pages/FriendsFeed';
+import BookRequests from './pages/BookRequests';
+import Hubs from './pages/Hubs';
 
 // Admin
 import AdminLayout from './pages/admin/AdminLayout';
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="/books" element={<><Navbar /><Catalogue /><Footer /></>} />
         <Route path="/books/:id" element={<><Navbar /><BookDetail /><Footer /></>} />
         <Route path="/forum" element={<><Navbar /><Forum /><Footer /></>} />
+        <Route path="/suggestions" element={<><Navbar /><BookRequests /><Footer /></>} />
+        <Route path="/hubs" element={<><Navbar /><Hubs /><Footer /></>} />
 
         {/* Auth pages */}
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />

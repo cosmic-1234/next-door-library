@@ -6,6 +6,8 @@ import { FiMenu, FiX, FiBook, FiUser, FiLogOut, FiSettings, FiShield } from 'rea
 
 const navLinks = [
   { to: '/books', label: 'Catalogue' },
+  { to: '/suggestions', label: 'Suggestions' },
+  { to: '/hubs', label: 'Hubs' },
   { to: '/forum', label: 'Community' },
   { to: '/feed', label: "Friends' Shelf", protected: true },
 ];

@@ -77,6 +77,14 @@ const userSchema = new mongoose.Schema({
   totalBooksRead: {
     type: Number,
     default: 0
+  },
+  readingChallengeYear: {
+    type: Number,
+    default: new Date().getFullYear()
+  },
+  readingChallengeGoal: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
