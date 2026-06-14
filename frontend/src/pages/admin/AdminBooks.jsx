@@ -269,7 +269,7 @@ export default function AdminBooks() {
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => { setModalBook(book); setModalOpen(true); }}>
                         <FiEdit2 size={13} />
                       </button>

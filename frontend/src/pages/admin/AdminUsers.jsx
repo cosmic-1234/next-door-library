@@ -120,7 +120,7 @@ export default function AdminUsers() {
                   </td>
                   <td>
                     {user._id !== currentUser._id && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                         <button
                           className="btn btn-sm btn-ghost"
                           onClick={() => toggleAdmin(user)}

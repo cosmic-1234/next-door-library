@@ -170,7 +170,7 @@ export default function AdminRentals() {
                       </select>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '4px' }}>
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
                         {actions.map((action, ai) => (
                           <button
                             key={ai}
