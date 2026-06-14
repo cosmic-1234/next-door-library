@@ -282,6 +282,7 @@ export default function BookDetail() {
   const [loading, setLoading] = useState(true);
   const [rentModalOpen, setRentModalOpen] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', body: '', hasSpoilers: false });
   const [reviewLoading, setReviewLoading] = useState(false);
   const [showSpoilers, setShowSpoilers] = useState({});
@@ -355,8 +356,12 @@ export default function BookDetail() {
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="book-detail-cover">
-              {book.cover ? (
-                <img src={book.cover} alt={book.title} />
+              {book.cover && !imageError ? (
+                <img 
+                  src={book.cover} 
+                  alt={book.title} 
+                  onError={() => setImageError(true)}
+                />
               ) : (
                 <div className="book-detail-cover-placeholder">
                   <FiBookOpen size={48} />

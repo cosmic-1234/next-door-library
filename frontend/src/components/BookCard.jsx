@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { FiStar, FiBookOpen, FiHeart } from 'react-icons/fi';
@@ -5,6 +6,7 @@ import { FiStar, FiBookOpen, FiHeart } from 'react-icons/fi';
 const conditionColors = { New: 'var(--sage)', Good: 'var(--copper)', Fair: 'var(--text-muted)' };
 
 export default function BookCard({ book, delay = 0 }) {
+  const [imageError, setImageError] = useState(false);
   const isAvailable = book.availableCopies > 0;
 
   return (
@@ -15,8 +17,13 @@ export default function BookCard({ book, delay = 0 }) {
     >
       <Link to={`/books/${book._id}`} className="book-card">
         <div className="book-card-cover-wrap">
-          {book.cover ? (
-            <img src={book.cover} alt={book.title} className="book-card-cover" />
+          {book.cover && !imageError ? (
+            <img 
+              src={book.cover} 
+              alt={book.title} 
+              className="book-card-cover" 
+              onError={() => setImageError(true)}
+            />
           ) : (
             <div className="book-card-cover-placeholder">
               <FiBookOpen size={32} className="placeholder-icon" />
