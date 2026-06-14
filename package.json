@@ -1,0 +1,14 @@
+{
+  "name": "next-door-library",
+  "version": "1.0.0",
+  "description": "Next Door Library — Community book lending platform for Nagpur",
+  "scripts": {
+    "start": "node backend/server.js",
+    "render-build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,0 +1,19 @@
+services:
+  # Single Web Service: Express serves both API and built React frontend
+  - type: web
+    name: next-door-library
+    runtime: node
+    region: singapore  # Closest to Nagpur
+    plan: free
+    rootDir: .
+    buildCommand: npm run render-build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false   # You'll set this in Render dashboard
+      - key: JWT_SECRET
+        sync: false   # You'll set this in Render dashboard
