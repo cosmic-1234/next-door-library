@@ -320,7 +320,18 @@ export default function BookDetail() {
     setReviewLoading(true);
     try {
       const res = await api.post(`/books/${id}/reviews`, reviewForm);
-      setReviews(prev => [res.data.review, ...prev]);
+      const newReview = res.data.review;
+      setReviews(prev => {
+        const updated = [newReview, ...prev];
+        const total = updated.length;
+        const avg = updated.reduce((sum, r) => sum + r.rating, 0) / total;
+        setBook(b => ({
+          ...b,
+          averageRating: Math.round(avg * 10) / 10,
+          totalRatings: total
+        }));
+        return updated;
+      });
       setReviewForm({ rating: 5, title: '', body: '', hasSpoilers: false });
       toast.success('Review posted!');
     } catch (err) {
@@ -329,6 +340,7 @@ export default function BookDetail() {
       setReviewLoading(false);
     }
   };
+
 
   if (loading) return <div className="loading-page"><div className="spinner" /></div>;
   if (!book) return null;
