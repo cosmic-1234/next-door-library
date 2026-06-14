@@ -218,7 +218,7 @@ const seedDB = async () => {
     // 1. Create Nagpur Admin User
     console.log('Creating admin user...');
     const adminUser = new User({
-      name: "Nagpur Admin",
+      name: "Rashi Agrawal",
       email: "admin@nextdoorlibrary.com",
       password: "adminpassword123", // Will be hashed automatically by userSchema pre-save
       role: "admin",
@@ -237,7 +237,7 @@ const seedDB = async () => {
     // 2. Create Normal User
     console.log('Creating standard test user...');
     const testUser = new User({
-      name: "Rohan Sharma",
+      name: "Shrirang Wanikar",
       email: "rohan@gmail.com",
       password: "password123", // Will be hashed automatically by userSchema pre-save
       role: "user",
