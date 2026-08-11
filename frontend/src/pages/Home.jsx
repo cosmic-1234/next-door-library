@@ -51,6 +51,8 @@ export default function Home() {
   // Smooth frame interpolation (lerp) values
   const targetProgress = useRef(0);
   const currentProgress = useRef(0);
+  const lastFrameIndex = useRef(-1);
+  const isAnimating = useRef(false);
   const animationFrameId = useRef(null);
 
   const [isPreloaded, setIsPreloaded] = useState(false);
@@ -128,8 +130,13 @@ export default function Home() {
     const frameCount = images.length;
     const frameIndex = Math.min(
       frameCount - 1,
-      Math.floor(progress * frameCount)
+      Math.max(0, Math.floor(progress * (frameCount - 1)))
     );
+
+    if (frameIndex === lastFrameIndex.current) {
+      return;
+    }
+    lastFrameIndex.current = frameIndex;
 
     const img = images[frameIndex];
     if (img && img.complete) {
@@ -171,6 +178,7 @@ export default function Home() {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
+      lastFrameIndex.current = -1; // Force redraw on resize
       drawFrame(currentProgress.current);
     };
 
@@ -182,38 +190,43 @@ export default function Home() {
   // Listen for scroll progress changes to trigger canvas updates
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
     targetProgress.current = latest;
+    if (isPreloaded && !prefersReducedMotion) {
+      startAnimationLoop();
+    }
   });
 
-  // Smooth frame interpolation (lerp) loop
-  useEffect(() => {
-    if (!isPreloaded || prefersReducedMotion) return;
+  // Smooth frame interpolation (lerp) loop manager
+  const startAnimationLoop = () => {
+    if (isAnimating.current) return;
+    isAnimating.current = true;
 
     const render = () => {
       const diff = targetProgress.current - currentProgress.current;
       
       if (Math.abs(diff) > 0.0001) {
-        currentProgress.current += diff * 0.07; // Smooth interpolation speed
+        currentProgress.current += diff * 0.09; // Smooth LERP speed (0.09 is responsive and buttery)
         drawFrame(currentProgress.current);
-      } else if (currentProgress.current !== targetProgress.current) {
+        animationFrameId.current = requestAnimationFrame(render);
+      } else {
         currentProgress.current = targetProgress.current;
         drawFrame(currentProgress.current);
+        isAnimating.current = false; // Go to sleep when target is reached
       }
-      animationFrameId.current = requestAnimationFrame(render);
     };
 
-    render();
+    animationFrameId.current = requestAnimationFrame(render);
+  };
+
+  useEffect(() => {
+    if (isPreloaded && !prefersReducedMotion) {
+      drawFrame(scrollYProgress.get());
+      startAnimationLoop();
+    }
     return () => {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [isPreloaded, prefersReducedMotion]);
-
-  // Initial draw when preloading completes
-  useEffect(() => {
-    if (isPreloaded && !prefersReducedMotion) {
-      drawFrame(scrollYProgress.get());
-    }
   }, [isPreloaded, prefersReducedMotion]);
 
   useEffect(() => {
