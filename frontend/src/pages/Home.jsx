@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform, useInView, animate } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView, animate, useMotionValueEvent } from 'framer-motion';
 import api from '../api/axios';
 import BookCard from '../components/BookCard';
 
@@ -42,14 +42,179 @@ const LITERARY_QUOTES = [
 export default function Home() {
   const [featuredBooks, setFeaturedBooks] = useState([]);
   const [quoteIndex, setQuoteIndex] = useState(0);
-  const { scrollY } = useScroll();
-  const heroY = useTransform(scrollY, [0, 600], [0, 200]);
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+
+  // Scroll triggering state & refs
+  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const imagesRef = useRef([]);
+
+  // Smooth frame interpolation (lerp) values
+  const targetProgress = useRef(0);
+  const currentProgress = useRef(0);
+  const animationFrameId = useRef(null);
+
+  const [isPreloaded, setIsPreloaded] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  // Option B: Fade in content overlays when scroll progress goes from 0.85 to 0.95
+  const contentOpacity = useTransform(scrollYProgress, [0.85, 0.95], [0, 1]);
+  // Fade out scroll indicator as user starts scrolling
+  const scrollIndicatorOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
 
   const howItWorksRef = useRef(null);
   const statsRef = useRef(null);
   const howInView = useInView(howItWorksRef, { once: true, margin: '-100px' });
   const statsInView = useInView(statsRef, { once: true });
+
+  // Handle prefers-reduced-motion
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    const listener = (e) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }, []);
+
+  // Preload WebP animation frames
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setIsPreloaded(true);
+      return;
+    }
+
+    const totalFrames = 239;
+    let loaded = 0;
+    const tempImages = [];
+
+    for (let i = 0; i < totalFrames; i++) {
+      const img = new Image();
+      img.src = `/library-images/frame_${i}.webp`;
+      img.onload = () => {
+        loaded++;
+        setLoadedCount(loaded);
+        if (loaded === totalFrames) {
+          imagesRef.current = tempImages;
+          setIsPreloaded(true);
+        }
+      };
+      img.onerror = () => {
+        loaded++;
+        setLoadedCount(loaded);
+        if (loaded === totalFrames) {
+          imagesRef.current = tempImages;
+          setIsPreloaded(true);
+        }
+      };
+      tempImages.push(img);
+    }
+  }, [prefersReducedMotion]);
+
+  // Canvas drawing helper
+  const drawFrame = (progress) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const images = imagesRef.current;
+    if (!images || images.length === 0) return;
+
+    const frameCount = images.length;
+    const frameIndex = Math.min(
+      frameCount - 1,
+      Math.floor(progress * frameCount)
+    );
+
+    const img = images[frameIndex];
+    if (img && img.complete) {
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const imgWidth = img.width;
+      const imgHeight = img.height;
+
+      const imgRatio = imgWidth / imgHeight;
+      const canvasRatio = canvasWidth / canvasHeight;
+
+      let drawWidth, drawHeight, drawX, drawY;
+
+      if (canvasRatio > imgRatio) {
+        drawWidth = canvasWidth;
+        drawHeight = canvasWidth / imgRatio;
+        drawX = 0;
+        drawY = (canvasHeight - drawHeight) / 2;
+      } else {
+        drawWidth = canvasHeight * imgRatio;
+        drawHeight = canvasHeight;
+        drawX = (canvasWidth - drawWidth) / 2;
+        drawY = 0;
+      }
+
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+    }
+  };
+
+  // Resize canvas handler (with High-DPI support)
+  useEffect(() => {
+    if (!isPreloaded || prefersReducedMotion) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      drawFrame(currentProgress.current);
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, [isPreloaded, prefersReducedMotion]);
+
+  // Listen for scroll progress changes to trigger canvas updates
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    targetProgress.current = latest;
+  });
+
+  // Smooth frame interpolation (lerp) loop
+  useEffect(() => {
+    if (!isPreloaded || prefersReducedMotion) return;
+
+    const render = () => {
+      const diff = targetProgress.current - currentProgress.current;
+      
+      if (Math.abs(diff) > 0.0001) {
+        currentProgress.current += diff * 0.07; // Smooth interpolation speed
+        drawFrame(currentProgress.current);
+      } else if (currentProgress.current !== targetProgress.current) {
+        currentProgress.current = targetProgress.current;
+        drawFrame(currentProgress.current);
+      }
+      animationFrameId.current = requestAnimationFrame(render);
+    };
+
+    render();
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, [isPreloaded, prefersReducedMotion]);
+
+  // Initial draw when preloading completes
+  useEffect(() => {
+    if (isPreloaded && !prefersReducedMotion) {
+      drawFrame(scrollYProgress.get());
+    }
+  }, [isPreloaded, prefersReducedMotion]);
 
   useEffect(() => {
     api.get('/books/featured').then(res => setFeaturedBooks(res.data.books || [])).catch(() => {});
@@ -59,110 +224,110 @@ export default function Home() {
 
   const currentQuote = LITERARY_QUOTES[quoteIndex];
 
+  // If reduced motion is preferred, overlays are visible immediately. Otherwise, driven by scroll.
+  const contentOpacityValue = prefersReducedMotion ? 1 : contentOpacity;
+  const scrollIndicatorOpacityValue = prefersReducedMotion ? 1 : scrollIndicatorOpacity;
+
   return (
     <div className="home">
-      {/* ===== HERO ===== */}
-      <section className="hero">
-        <motion.div className="hero-bg" style={{ y: heroY }}>
-          <div className="hero-bg-orb hero-bg-orb-1" />
-          <div className="hero-bg-orb hero-bg-orb-2" />
-          <div className="hero-bg-orb hero-bg-orb-3" />
-          <div className="hero-paper-texture" />
-        </motion.div>
+      <section className="hero-scroll-container" ref={containerRef}>
+        <div className="hero-sticky-wrapper">
+          {prefersReducedMotion ? (
+            <div className="hero-reduced-motion-bg" />
+          ) : (
+            <>
+              <canvas ref={canvasRef} className="hero-canvas" />
+              {!isPreloaded && (
+                <div className="hero-loading-overlay">
+                  <div className="hero-loading-spinner" />
+                  <p className="hero-loading-text">Opening pages... {Math.round((loadedCount / 239) * 100)}%</p>
+                </div>
+              )}
+            </>
+          )}
+          {/* Cinematic dark overlay to make text highly visible */}
+          <div className="hero-overlay-shade" />
 
-        <motion.div className="hero-content container" style={{ opacity: heroOpacity }}>
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <span className="hero-eyebrow">Nagpur's Community Library</span>
-            <h1 className="hero-title">
-              Stories find<br />
-              <em>their next reader</em>
-            </h1>
-            <p className="hero-subtitle">
-              Borrow beautifully curated books for just <strong>₹15–30 per week</strong>.
-              Read slow, live deep. Become part of a community that believes in
-              the magic of turning pages.
-            </p>
-
-            <div className="hero-cta">
-              <Link to="/books" className="btn btn-primary btn-lg" id="hero-browse-btn">
-                Browse the Collection
-              </Link>
-              <Link to="/register" className="btn btn-secondary btn-lg" id="hero-join-btn">
-                Join the Library
-              </Link>
-            </div>
-
-            <div className="hero-trust">
-              <div className="hero-trust-item">
-                <span className="hero-trust-icon">📚</span>
-                <span>100+ curated books</span>
-              </div>
-              <div className="hero-trust-dot" />
-              <div className="hero-trust-item">
-                <span className="hero-trust-icon">🏠</span>
-                <span>Home delivery in Nagpur</span>
-              </div>
-              <div className="hero-trust-dot" />
-              <div className="hero-trust-item">
-                <span className="hero-trust-icon">♻️</span>
-                <span>Sustainable reading</span>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="hero-visual"
-            initial={{ opacity: 0, x: 60 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="hero-book-stack">
-              {['#C4906A', '#8A9A7B', '#3B2314', '#D4A882', '#7A8F6E'].map((color, i) => (
-                <motion.div
-                  key={i}
-                  className="hero-book-spine"
-                  style={{ background: color, height: `${140 - i * 8}px`, zIndex: 5 - i }}
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 3 + i * 0.4, repeat: Infinity, delay: i * 0.3 }}
-                />
-              ))}
-            </div>
-
-            <div className="hero-card-quote">
+          <div className="hero">
+            <motion.div
+              className="hero-content container"
+              style={{ opacity: contentOpacityValue }}
+            >
               <motion.div
-                key={quoteIndex}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.5 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 40 }}
+                animate={isPreloaded ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               >
-                <p className="hero-quote-text">"{currentQuote.text}"</p>
-                <p className="hero-quote-author">— {currentQuote.author}</p>
+                <span className="hero-eyebrow">Nagpur's Community Library</span>
+                <h1 className="hero-title">
+                  Stories find<br />
+                  <em>their next reader</em>
+                </h1>
+                <p className="hero-subtitle">
+                  Borrow beautifully curated books for just <strong>₹15–30 per week</strong>.
+                  Read slow, live deep. Become part of a community that believes in
+                  the magic of turning pages.
+                </p>
+
+                <div className="hero-cta">
+                  <Link to="/books" className="btn btn-primary btn-lg" id="hero-browse-btn">
+                    Browse the Collection
+                  </Link>
+                  <Link to="/register" className="btn btn-secondary btn-lg" id="hero-join-btn">
+                    Join the Library
+                  </Link>
+                </div>
+
+                <div className="hero-trust">
+                  <div className="hero-trust-item">
+                    <span className="hero-trust-icon">📚</span>
+                    <span>100+ curated books</span>
+                  </div>
+                  <div className="hero-trust-dot" />
+                  <div className="hero-trust-item">
+                    <span className="hero-trust-icon">🏠</span>
+                    <span>Home delivery in Nagpur</span>
+                  </div>
+                  <div className="hero-trust-dot" />
+                  <div className="hero-trust-item">
+                    <span className="hero-trust-icon">♻️</span>
+                    <span>Sustainable reading</span>
+                  </div>
+                </div>
               </motion.div>
-            </div>
 
-            <div className="hero-logo-mark">
-              <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="60" cy="60" r="58" stroke="var(--brown-rich)" strokeWidth="1.5" opacity="0.3"/>
-                <path d="M60 90C44 78 30 65 30 50C30 41.7 36.7 35 45 35C50.5 35 55.5 37.8 60 42C64.5 37.8 69.5 35 75 35C83.3 35 90 41.7 90 50C90 65 76 78 60 90Z"
-                  stroke="var(--brown-rich)" strokeWidth="2" fill="var(--copper)" fillOpacity="0.15"/>
-                <line x1="60" y1="42" x2="60" y2="90" stroke="var(--brown-mid)" strokeWidth="1.5"/>
-                <path d="M45 52C45 52 50 48 55 52M65 52C65 52 70 48 75 52" stroke="var(--brown-mid)" strokeWidth="1" strokeLinecap="round"/>
-              </svg>
-            </div>
-          </motion.div>
-        </motion.div>
+              <motion.div
+                className="hero-visual"
+                initial={prefersReducedMotion ? false : { opacity: 0, x: 60 }}
+                animate={isPreloaded ? { opacity: 1, x: 0 } : { opacity: 0, x: 60 }}
+                transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="hero-card-quote">
+                  <motion.div
+                    key={quoteIndex}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <p className="hero-quote-text">"{currentQuote.text}"</p>
+                    <p className="hero-quote-author">— {currentQuote.author}</p>
+                  </motion.div>
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
 
-        <div className="hero-scroll-indicator">
           <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
+            className="hero-scroll-indicator"
+            style={{ opacity: scrollIndicatorOpacityValue }}
           >
-            <div className="hero-scroll-line" />
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <div className="hero-scroll-line" />
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -334,67 +499,6 @@ export default function Home() {
       </section>
 
       <style>{`
-        .home { overflow-x: hidden; }
-
-        /* HERO */
-        .hero {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          position: relative;
-          overflow: hidden;
-          padding-top: 100px;
-        }
-
-        .hero-bg {
-          position: absolute;
-          inset: 0;
-          z-index: 0;
-        }
-
-        .hero-bg-orb {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(80px);
-        }
-
-        .hero-bg-orb-1 {
-          width: 600px;
-          height: 600px;
-          background: radial-gradient(circle, rgba(196, 144, 106, 0.2) 0%, transparent 70%);
-          top: -100px;
-          right: -100px;
-        }
-
-        .hero-bg-orb-2 {
-          width: 400px;
-          height: 400px;
-          background: radial-gradient(circle, rgba(122, 143, 110, 0.15) 0%, transparent 70%);
-          bottom: 100px;
-          left: 50px;
-        }
-
-        .hero-bg-orb-3 {
-          width: 300px;
-          height: 300px;
-          background: radial-gradient(circle, rgba(201, 168, 76, 0.1) 0%, transparent 70%);
-          top: 30%;
-          left: 30%;
-        }
-
-        .hero-paper-texture {
-          position: absolute;
-          inset: 0;
-          background-image:
-            repeating-linear-gradient(
-              0deg,
-              transparent,
-              transparent 28px,
-              rgba(196, 144, 106, 0.04) 28px,
-              rgba(196, 144, 106, 0.04) 29px
-            );
-        }
-
         .hero-content {
           position: relative;
           z-index: 1;
@@ -413,37 +517,39 @@ export default function Home() {
           font-weight: 500;
           letter-spacing: 0.2em;
           text-transform: uppercase;
-          color: var(--copper);
+          color: var(--copper-light);
           margin-bottom: 16px;
           padding: 6px 14px;
-          background: rgba(196, 144, 106, 0.1);
+          background: rgba(196, 144, 106, 0.15);
           border-radius: var(--radius-full);
-          border: 1px solid rgba(196, 144, 106, 0.2);
+          border: 1px solid rgba(196, 144, 106, 0.35);
         }
 
         .hero-title {
           font-family: var(--font-serif);
           font-size: clamp(3rem, 6vw, 5.5rem);
           font-weight: 600;
-          color: var(--brown-deep);
+          color: var(--cream);
           line-height: 1.08;
           margin-bottom: 24px;
+          text-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
         }
 
         .hero-title em {
           font-style: italic;
-          color: var(--copper);
+          color: var(--copper-light);
         }
 
         .hero-subtitle {
           font-size: var(--text-lg);
-          color: var(--text-secondary);
+          color: rgba(247, 240, 227, 0.95);
           line-height: 1.75;
           margin-bottom: 36px;
           max-width: 480px;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
         }
 
-        .hero-subtitle strong { color: var(--brown-rich); font-weight: 600; }
+        .hero-subtitle strong { color: var(--cream); font-weight: 600; }
 
         .hero-cta {
           display: flex;
@@ -464,7 +570,7 @@ export default function Home() {
           align-items: center;
           gap: 6px;
           font-size: var(--text-sm);
-          color: var(--text-muted);
+          color: rgba(247, 240, 227, 0.8);
         }
 
         .hero-trust-icon { font-size: 14px; }
@@ -483,22 +589,6 @@ export default function Home() {
           align-items: center;
           justify-content: center;
           min-height: 450px;
-        }
-
-        .hero-book-stack {
-          display: flex;
-          align-items: flex-end;
-          gap: 6px;
-          position: absolute;
-          bottom: 60px;
-          left: 50%;
-          transform: translateX(-50%);
-        }
-
-        .hero-book-spine {
-          width: 28px;
-          border-radius: 4px 2px 2px 4px;
-          box-shadow: 2px 0 8px rgba(0,0,0,0.15);
         }
 
         .hero-card-quote {
@@ -528,15 +618,6 @@ export default function Home() {
           font-weight: 500;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-        }
-
-        .hero-logo-mark {
-          position: absolute;
-          bottom: -10px;
-          right: 0;
-          width: 100px;
-          opacity: 0.4;
-          animation: float 5s ease-in-out infinite;
         }
 
         .hero-scroll-indicator {

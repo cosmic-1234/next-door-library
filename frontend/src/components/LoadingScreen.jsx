@@ -10,12 +10,7 @@ export default function LoadingScreen() {
         transition={{ duration: 0.4 }}
       >
         <div className="loading-tree">
-          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="60" height="60">
-            <circle cx="40" cy="40" r="38" stroke="var(--copper)" strokeWidth="1.5" opacity="0.4"/>
-            <path d="M40 60C28 50 20 40 20 30C20 24 24.5 19 31 19C34.5 19 38 21 40 24C42 21 45.5 19 49 19C55.5 19 60 24 60 30C60 40 52 50 40 60Z"
-              stroke="var(--brown-rich)" strokeWidth="1.5" fill="var(--copper)" fillOpacity="0.1"/>
-            <line x1="40" y1="24" x2="40" y2="60" stroke="var(--brown-mid)" strokeWidth="1.2"/>
-          </svg>
+          <img src="/logo.png" alt="Next Door Library Logo" className="loading-logo-img" />
         </div>
 
         <motion.div
@@ -57,6 +52,12 @@ export default function LoadingScreen() {
 
         .loading-tree {
           animation: float 3s ease-in-out infinite;
+        }
+
+        .loading-logo-img {
+          width: 60px;
+          height: 60px;
+          object-fit: contain;
         }
 
         .loading-dots {

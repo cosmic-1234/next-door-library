@@ -9,10 +9,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="footer-brand">
             <div className="footer-logo">
-              <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-                <circle cx="20" cy="20" r="19" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M20 28C14 23 10 18 10 14C10 11.8 11.8 10 14 10C16.1 10 17.9 11.3 20 13.5C22.1 11.3 23.9 10 26 10C28.2 10 30 11.8 30 14C30 18 26 23 20 28Z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-              </svg>
+              <img src="/logo.png" alt="Next Door Library Logo" className="footer-logo-img" />
               <span className="footer-logo-text">Next Door Library</span>
             </div>
             <p className="footer-tagline">
@@ -114,6 +111,12 @@ export default function Footer() {
           gap: 12px;
           margin-bottom: 16px;
           color: var(--cream);
+        }
+
+        .footer-logo-img {
+          width: 32px;
+          height: 32px;
+          object-fit: contain;
         }
 
         .footer-logo-text {

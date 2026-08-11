@@ -36,12 +36,7 @@ export default function Login() {
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="auth-logo">
-            <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" width="48" height="48">
-              <circle cx="30" cy="30" r="28" stroke="var(--cream)" strokeWidth="1.5" opacity="0.4"/>
-              <path d="M30 46C21 38 15 30 15 22C15 17.6 18.6 14 23 14C26 14 28.7 15.7 30 18C31.3 15.7 34 14 37 14C41.4 14 45 17.6 45 22C45 30 39 38 30 46Z"
-                stroke="var(--cream)" strokeWidth="1.5" fill="var(--cream)" fillOpacity="0.15"/>
-              <line x1="30" y1="18" x2="30" y2="46" stroke="var(--cream)" strokeWidth="1.2" opacity="0.6"/>
-            </svg>
+            <img src="/logo.png" alt="Next Door Library Logo" className="auth-logo-img" />
             <div>
               <span className="auth-logo-text">Next Door Library</span>
               <span className="auth-logo-sub">Nagpur</span>
@@ -169,6 +164,13 @@ export default function Login() {
           display: flex;
           align-items: center;
           gap: 12px;
+        }
+
+        .auth-logo-img {
+          width: 48px;
+          height: 48px;
+          object-fit: contain;
+          border-radius: 50%;
         }
 
         .auth-logo-text {

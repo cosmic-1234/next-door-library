@@ -56,12 +56,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link to="/" className="navbar-logo">
             <div className="navbar-logo-icon">
-              <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="20" cy="20" r="19" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M20 30C20 30 8 22 8 14C8 10.7 10.7 8 14 8C16.4 8 18.5 9.4 20 11.5C21.5 9.4 23.6 8 26 8C29.3 8 32 10.7 32 14C32 22 20 30 20 30Z" fill="currentColor" opacity="0.15"/>
-                <path d="M20 28C14 23 10 18 10 14C10 11.8 11.8 10 14 10C16.1 10 17.9 11.3 20 13.5C22.1 11.3 23.9 10 26 10C28.2 10 30 11.8 30 14C30 18 26 23 20 28Z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-                <path d="M20 13V28M20 13C18 11 15 10 14 10" stroke="currentColor" strokeWidth="1"/>
-              </svg>
+              <img src="/logo.png" alt="Next Door Library Logo" className="navbar-logo-img" />
             </div>
             <div>
               <span className="navbar-logo-text">Next Door</span>
@@ -225,6 +220,12 @@ export default function Navbar() {
           height: 36px;
           color: var(--brown-rich);
           flex-shrink: 0;
+        }
+
+        .navbar-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
         }
 
         .navbar-logo-text {

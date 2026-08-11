@@ -32,11 +32,7 @@ export default function AdminLayout() {
       >
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
-              <circle cx="20" cy="20" r="18" stroke="var(--copper)" strokeWidth="1.5" opacity="0.5"/>
-              <path d="M20 30C14 25 10 20 10 15C10 12 12.7 10 16 10C17.9 10 19.6 11 20 12.5C20.4 11 22.1 10 24 10C27.3 10 30 12 30 15C30 20 26 25 20 30Z"
-                stroke="var(--copper)" strokeWidth="1.2" fill="var(--copper)" fillOpacity="0.1"/>
-            </svg>
+            <img src="/logo.png" alt="Next Door Library Logo" className="sidebar-logo-img" />
             <div>
               <span className="sidebar-logo-text">Admin Panel</span>
               <span className="sidebar-logo-sub">Next Door Library</span>
@@ -130,6 +126,13 @@ export default function AdminLayout() {
           display: flex;
           align-items: center;
           gap: 10px;
+        }
+
+        .sidebar-logo-img {
+          width: 28px;
+          height: 28px;
+          object-fit: contain;
+          border-radius: 50%;
         }
 
         .sidebar-logo-text {

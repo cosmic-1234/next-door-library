@@ -22,6 +22,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
 
+  const [supportSubject, setSupportSubject] = useState('');
+  const [supportCategory, setSupportCategory] = useState('other');
+  const [supportDescription, setSupportDescription] = useState('');
+  const [submittingSupport, setSubmittingSupport] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -57,6 +62,43 @@ export default function Dashboard() {
       toast.success('Reading challenge goal updated!');
     } catch (err) {
       toast.error('Failed to update reading challenge');
+    }
+  };
+
+  const handleSupportSubmit = async (e) => {
+    e.preventDefault();
+    if (!supportSubject.trim() || !supportDescription.trim()) {
+      toast.error('Please fill in both Subject and Description.');
+      return;
+    }
+    setSubmittingSupport(true);
+    try {
+      const token = localStorage.getItem('ndl_token');
+      const response = await fetch('http://localhost:5050/api/crm/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subject: supportSubject,
+          description: supportDescription,
+          category: supportCategory
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Support ticket submitted successfully!');
+        setSupportSubject('');
+        setSupportDescription('');
+        setSupportCategory('other');
+      } else {
+        toast.error(data.message || 'Failed to submit support ticket.');
+      }
+    } catch (err) {
+      toast.error('Could not connect to the Support CRM system.');
+    } finally {
+      setSubmittingSupport(false);
     }
   };
 
@@ -328,6 +370,60 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
+          {/* Support Ticket Section */}
+          <div style={{ marginTop: '60px', backgroundColor: 'var(--cream-light)', padding: '30px', borderRadius: '12px', border: '1px solid var(--cream-dark)', boxShadow: 'var(--shadow-sm)' }}>
+            <h2 className="dashboard-section-title" style={{ marginBottom: '20px', borderBottom: '1px solid var(--cream-dark)', paddingBottom: '10px' }}>
+              🌳 Contact Support Desk
+            </h2>
+            <form onSubmit={handleSupportSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '240px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Subject / Issue Summary</label>
+                  <input 
+                    type="text" 
+                    placeholder="Briefly describe the issue..."
+                    style={{ padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cream-dark)', backgroundColor: 'white', color: 'var(--text-primary)', outline: 'none' }}
+                    value={supportSubject}
+                    onChange={(e) => setSupportSubject(e.target.value)}
+                  />
+                </div>
+                <div style={{ width: '220px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Category</label>
+                  <select 
+                    style={{ padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cream-dark)', backgroundColor: 'white', color: 'var(--text-primary)', outline: 'none', height: '42px' }}
+                    value={supportCategory}
+                    onChange={(e) => setSupportCategory(e.target.value)}
+                  >
+                    <option value="damaged book">Damaged Book</option>
+                    <option value="late fee dispute">Late Fee Dispute</option>
+                    <option value="delivery issue">Delivery Issue</option>
+                    <option value="payment">Payment Problem</option>
+                    <option value="account">Account Settings</option>
+                    <option value="other">Other Inquiry</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Full Description</label>
+                <textarea 
+                  rows="4"
+                  placeholder="Tell us details about the problem, book, or rental request..."
+                  style={{ padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cream-dark)', backgroundColor: 'white', color: 'var(--text-primary)', outline: 'none' }}
+                  value={supportDescription}
+                  onChange={(e) => setSupportDescription(e.target.value)}
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                style={{ alignSelf: 'flex-start', padding: '10px 28px', borderRadius: '999px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}
+                disabled={submittingSupport}
+              >
+                {submittingSupport ? 'Submitting...' : 'Submit Support Ticket'}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 

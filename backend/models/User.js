@@ -85,6 +85,33 @@ const userSchema = new mongoose.Schema({
   readingChallengeGoal: {
     type: Number,
     default: 0
+  },
+  // CRM sync fields
+  lifecycleStage: {
+    type: String,
+    enum: ['lead', 'active', 'at-risk', 'churned', 'vip'],
+    default: 'lead'
+  },
+  acquisitionSource: {
+    type: String,
+    default: 'organic'
+  },
+  assignedOwner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  tags: [{
+    type: String,
+    trim: true
+  }],
+  lifetimeValue: {
+    type: Number,
+    default: 0
+  },
+  lastActivityAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true

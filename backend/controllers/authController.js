@@ -9,7 +9,7 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, acquisitionSource } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Please provide name, email and password' });
@@ -20,7 +20,14 @@ const register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'An account with this email already exists' });
     }
 
-    const user = await User.create({ name, email, password, phone });
+    const user = await User.create({ 
+      name, 
+      email, 
+      password, 
+      phone,
+      acquisitionSource: acquisitionSource || 'organic',
+      lifecycleStage: 'lead'
+    });
 
     const token = generateToken(user._id);
 
