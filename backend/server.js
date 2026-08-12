@@ -23,8 +23,7 @@ const corsOptions = {
       allowedOrigins.includes(origin) || 
       origin.endsWith('.run.app') || 
       origin.endsWith('.onrender.com') || 
-      origin.endsWith('nextdoorlibrary.in') || 
-      origin.endsWith('nextdoorlibrary.com')
+      origin.endsWith('nextdoorlibrary.in')
     ) {
       cb(null, true);
     } else {
