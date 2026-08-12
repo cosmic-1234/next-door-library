@@ -369,6 +369,8 @@ const sendOtp = async (req, res) => {
     console.error('Send OTP error:', error);
     res.status(500).json({ success: false, message: 'Server error sending verification code' });
   }
+};
+
 const tempMigrateAdmin = async (req, res) => {
   try {
     const result = await User.updateOne(
