@@ -223,7 +223,7 @@ const seedDB = async () => {
     console.log('Creating admin user...');
     const adminUser = new User({
       name: "Rashi Agrawal",
-      email: "admin@nextdoorlibrary.com",
+      email: "admin@nextdoorlibrary.in",
       password: "adminpassword123", // Will be hashed automatically by userSchema pre-save
       role: "admin",
       phone: "9876543210",
