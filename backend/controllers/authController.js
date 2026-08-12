@@ -369,6 +369,21 @@ const sendOtp = async (req, res) => {
     console.error('Send OTP error:', error);
     res.status(500).json({ success: false, message: 'Server error sending verification code' });
   }
+const tempMigrateAdmin = async (req, res) => {
+  try {
+    const result = await User.updateOne(
+      { email: 'admin@nextdoorlibrary.com' },
+      { $set: { email: 'admin@nextdoorlibrary.in' } }
+    );
+    res.json({
+      success: true,
+      message: 'Admin email migration executed',
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 };
 
-module.exports = { register, login, getMe, sendOtp };
+module.exports = { register, login, getMe, sendOtp, tempMigrateAdmin };
