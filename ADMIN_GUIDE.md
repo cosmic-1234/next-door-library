@@ -29,86 +29,79 @@ The main admin dashboard provides a quick summary of the platform's current heal
 Located in the **Books** tab, this is where you control the books catalogue.
 
 ### Adding a New Book
-1.  Click the **Add New Book** button.
-2.  Fill in the details:
-    *   **Title**: The name of the book.
-    *   **Author**: The writer's name.
-    *   **Genre**: Select from standard genres (Fiction, Self-Help, Mystery, Romance, etc.).
-    *   **Rental Price**: Weekly rental price (standard rate is between ₹15 to ₹30 per week).
-    *   **Total Copies**: The total quantity of this book owned by the library.
-    *   **Condition**: Select the physical condition (New, Good, Fair).
-    *   **Synopsis**: A brief description/blurb of the book.
-3.  **Cover Image Upload**: (See details below).
-4.  Click **Save / Add Book**.
+1.  Click the **Add Book** button.
+2.  Fill in the form fields:
+    *   **Title** (Required): The name of the book.
+    *   **Author** (Required): The writer's name.
+    *   **Genre** (Required): Select from the dropdown genres (Fiction, Non-Fiction, Mystery, Romance, Fantasy, Science Fiction, Biography, Self-Help, History, Children, Young Adult, Thriller, Literary Fiction, Philosophy, Psychology, Business, Poetry, Other).
+    *   **Description** (Required): A brief synopsis/blurb of the book.
+    *   **Price Per Week (₹)** (Required): Weekly rental price (must be between ₹10 and ₹100).
+    *   **Total Copies**: The total quantity of this book owned by the library (must be at least 1).
+    *   **Language**: Select the book's language (English, Hindi, Marathi, Other).
+    *   **Condition**: Select physical condition (New, Good, Fair).
+    *   **Publisher**: Publisher name.
+    *   **Published Year**: Year of publication (e.g. 2023).
+    *   **Pages**: Number of pages.
+    *   **ISBN**: Standard ISBN identifier number.
+    *   **Tags**: Comma-separated search words (e.g. `bestseller, emotional, recommended`).
+    *   **Cover Image**: Upload an image file (JPEG/PNG) from your computer.
+    *   **Mark as Featured**: Toggle the checkbox to feature the book on the main landing page.
+3.  Click **Add Book** (or **Update Book** if editing).
 
 ### Updating Cover Images
-*   **During Upload/Edit**: Inside the Book form, you can upload an image file (JPEG/PNG) directly from your computer.
-*   **Image Processing**: The server automatically processes the image, saves it in the secure `/uploads/` static directory on the server, and saves the relative link in the database.
-*   **Best Practice**: Use portrait-oriented images with a standard aspect ratio (e.g., 3:4 or 2:3) and a resolution of at least 400x600 pixels to ensure they look premium in the browser grids.
+*   **Image Processing**: When you upload an image, the server processes it, stores it in the secure `/uploads/` directory, and saves the relative link in the database.
+*   **Tip**: Use standard portrait aspect-ratio images (e.g. 3:4 or 2:3) for a clean visual grid layout.
 
 ### Editing & Deleting Books
-*   **Editing**: Click the **Edit (pencil icon)** on any book row to update its weekly price, total copies, condition description, or upload a new cover image.
-*   **Availability Calculation**: The system dynamically calculates available copies: `Available = Total Copies - Active Loans`.
-*   **Deleting**: Click the **Delete** button to remove a title from the library catalog. (Note: Only delete books that do not have active active rentals).
+*   **Editing**: Click the **Edit (pencil icon)** on any book row to modify its details.
+*   **Availability Calculation**: The system automatically calculates available stock: `Available = Total Copies - Active Loans`.
+*   **Deleting**: Click the **Delete** button to remove a title from the catalog.
 
 ---
 
 ## 4. Hubs & Pickup Locations Management
-Physical pickup spots are managed in the **Hubs** section. These locations are shown to readers during checkout when they select "Self Pickup".
+To make pickup operations community-oriented, neighbors (such as stay-at-home mothers or book lovers) apply to host pickup/drop-off points.
 
-### Managing Hubs
-*   **Add Hub**: Click **Add Hub** and enter:
-    *   **Hub Name**: E.g., "Dharampeth Library Corner".
-    *   **Full Address**: The physical address of the hub.
-    *   **Working Hours**: The open hours (e.g., "Mon-Sat: 10 AM - 7 PM").
-    *   **Contact Number**: Phone number for local coordinates.
-*   **Edit Hub**: Update locations, timing adjustments, or phone numbers.
-*   **Delete Hub**: Remove a hub if it is no longer operational.
+### Hub Verification & Approval Workflow
+1.  **Application**: Users apply to host a neighborhood hub directly through the public `/hubs` page.
+2.  **Pending Status**: Newly submitted applications are saved in the database with `status: "pending"`.
+3.  **Activation**: There is no direct admin UI panel for hubs in the dashboard. To approve and activate a hub, the administrator must change its `status` field to `"active"` directly in the database (via MongoDB Atlas or using a database query).
+4.  **Display**: Once activated (`status: "active"`), the hub is displayed publicly on the `/hubs` page and becomes available for selection by readers during book checkout.
 
 ---
 
 ## 5. Rentals & Checkout Requests Flow
-When a user requests a book, it appears in the **Rentals** tab. To move a rental request through its lifecycle, use the **Quick Actions** status transition buttons:
+When a user requests a book, it appears in the **Rentals** tab of the Admin dashboard.
 
-### Rental Status Lifecycle
+### Status Transitions
+You can change a rental status at any time to **any** value using the dropdown selector in the table row:
+*   `pending` — Initial request submitted by the reader.
+*   `approved` — Request approved.
+*   `active` — Book is currently with the reader.
+*   `returned` — Book returned to library.
+*   `overdue` — Due date passed.
+*   `cancelled` — Request cancelled or rejected.
 
-```mermaid
-graph TD
-    Pending[Pending: User requested checkout] -->|Approve & Verify| Approved[Approved: Book reserved & payment confirmed]
-    Approved -->|Handover/Delivery| Active[Reading: Reader has the book]
-    Active -->|Return Received| Returned[Returned: Book back in stock]
-    Active -->|Overdue Date Passed| Overdue[Overdue: Late return warning]
-    Pending -->|Reject/Cancel| Cancelled[Cancelled]
-```
-
-### Action Controls:
-1.  **Pending**: A reader has requested a book. 
-    *   Verify the checkout details and payment method.
-    *   Click **Approve** (marks it as **Approved**). This reserves the copy.
-2.  **Approved**: The book is ready.
-    *   Upon hand-off (Self-pickup) or shipping (Home Delivery), click **Mark Out** (marks it as **Reading / Active**).
-3.  **Active**: The reader currently has the book.
-    *   The system monitors the due date. If the return date passes without action, it shows an **Overdue** flag.
-4.  **Returned**: When the reader returns the book, click **Mark Returned**. 
-    *   This automatically increments the book's `availableCopies` count by 1 in the inventory so other readers can check it out!
-5.  **Cancelled**: If a payment fails or a reader cancels, click **Cancel Request**.
+### Quick Action Shortcuts
+For convenience, you can use the action buttons next to the dropdown:
+*   **From `pending`**:
+    *   Click **Approve (Checkmark)** ➡️ Transitions status directly to **Active** (book checked out).
+    *   Click **Cancel (X)** ➡️ Transitions status to **Cancelled**.
+*   **From `active`**:
+    *   Click **Mark Returned (Refresh icon)** ➡️ Transitions status to **Returned**. This automatically increases the book's `availableCopies` count by 1 in the inventory so other users can rent it.
 
 ---
 
 ## 6. Registered Members Management
-The **Users** tab displays a list of registered platform members.
-
-*   **Member Cards**: View their name, email, profile bio, and total books read.
-*   **Contact Information**: Displays their verified phone number and email coordinates (e.g., to follow up on late book returns).
-*   **Role Management**: Standard readers have the role `user`. You can view administrator accounts (role `admin`) here as well.
+The **Users** tab displays registered community readers:
+*   View member names, emails, and signup dates.
+*   Check contact phone numbers to coordinate pickup details or follow up on overdue loans.
+*   Admin accounts are flagged with the `admin` role, and standard members have the `user` role.
 
 ---
 
-## 7. Customer Support Ticket Desk
-When readers submit support inquiries through their dashboard, they appear in the **Support Tickets** desk.
-
-*   **Reviewing Tickets**: View the subject summary, categorized issue type (Payment, Delivery, Account, Other), and detailed description.
-*   **Resolution Process**:
-    1.  Read the member's contact email.
-    2.  Send support updates or coordinate directly via the primary email channel: **`admin@nextdoorlibrary.in`**.
-    3.  Once resolved, mark the ticket complete.
+## 7. Customer Support Desk
+Support queries submitted by users in their accounts appear in the **Support Tickets** grid:
+*   Review query category (Payment, Delivery, Account, Other) and message.
+*   Coordinate directly with the member using your primary email address: **`admin@nextdoorlibrary.in`**.
+*   Once resolved, mark the ticket complete.
