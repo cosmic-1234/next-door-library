@@ -16,16 +16,25 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.run.app') || origin.endsWith('.onrender.com')) {
+    if (
+      !origin || 
+      allowedOrigins.includes(origin) || 
+      origin.endsWith('.run.app') || 
+      origin.endsWith('.onrender.com') || 
+      origin.endsWith('nextdoorlibrary.in') || 
+      origin.endsWith('nextdoorlibrary.com')
+    ) {
       cb(null, true);
     } else {
       cb(new Error('CORS not allowed'));
     }
   },
   credentials: true
-}));
+};
+
+app.use('/api', cors(corsOptions));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
