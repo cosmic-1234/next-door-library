@@ -457,6 +457,9 @@ export default function BookDetail() {
       try {
         const res = await api.get(`/books/${id}`);
         setBook(res.data.book);
+        if (res.data.book) {
+          document.title = `Next Door Library | ${res.data.book.title} by ${res.data.book.author}`;
+        }
         setReviews(res.data.reviews || []);
         setRelated(res.data.related || []);
       } catch {

@@ -13,6 +13,10 @@ export default function Register() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    document.title = "Next Door Library | Join the Library";
+  }, []);
+
   const [otpStep, setOtpStep] = useState('details'); // 'details' | 'verify'
   const [otp, setOtp] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);

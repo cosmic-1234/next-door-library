@@ -53,6 +53,7 @@ export default function Home() {
   const statsInView = useInView(statsRef, { once: true });
 
   useEffect(() => {
+    document.title = "Next Door Library | Book Lending Community";
     api.get('/books/featured').then(res => setFeaturedBooks(res.data.books || [])).catch(() => {});
     const interval = setInterval(() => setQuoteIndex(i => (i + 1) % LITERARY_QUOTES.length), 5000);
     return () => clearInterval(interval);

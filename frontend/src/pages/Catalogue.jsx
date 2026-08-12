@@ -61,6 +61,10 @@ export default function Catalogue() {
 
   useEffect(() => { fetchBooks(1); }, [debouncedSearch, filters.genre, filters.language, filters.condition, filters.available, filters.sort, filters.minPrice, filters.maxPrice]);
 
+  useEffect(() => {
+    document.title = "Next Door Library | Browse Book Collection";
+  }, []);
+
   const updateFilter = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
   const clearFilters = () => setFilters({ search: '', genre: '', language: '', condition: '', available: '', sort: '', minPrice: '', maxPrice: '' });
 

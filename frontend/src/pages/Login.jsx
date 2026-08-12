@@ -12,6 +12,10 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    document.title = "Next Door Library | Sign In";
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
