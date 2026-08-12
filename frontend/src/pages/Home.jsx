@@ -32,17 +32,8 @@ function StatCounter({ value, label, suffix = '' }) {
   );
 }
 
-const LITERARY_QUOTES = [
-  { text: "A reader lives a thousand lives before he dies.", author: "George R.R. Martin" },
-  { text: "Not all those who wander are lost.", author: "J.R.R. Tolkien" },
-  { text: "People said Ove saw the world in black and white. But she was color. All the color he had.", author: "Fredrik Backman, A Man Called Ove" },
-  { text: "Don't ignore half of me so you can fit me into a box. Don't do that.", author: "Taylor Jenkins Reid, The Seven Husbands of Evelyn Hugo" },
-  { text: "We read to know we are not alone.", author: "C.S. Lewis" },
-];
-
 export default function Home() {
   const [featuredBooks, setFeaturedBooks] = useState([]);
-  const [quoteIndex, setQuoteIndex] = useState(0);
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 600], [0, 200]);
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
@@ -55,11 +46,7 @@ export default function Home() {
   useEffect(() => {
     document.title = "Next Door Library | Book Lending Community";
     api.get('/books/featured').then(res => setFeaturedBooks(res.data.books || [])).catch(() => {});
-    const interval = setInterval(() => setQuoteIndex(i => (i + 1) % LITERARY_QUOTES.length), 5000);
-    return () => clearInterval(interval);
   }, []);
-
-  const currentQuote = LITERARY_QUOTES[quoteIndex];
 
   return (
     <div className="home">
@@ -134,18 +121,7 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="hero-card-quote">
-              <motion.div
-                key={quoteIndex}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.5 }}
-              >
-                <p className="hero-quote-text">"{currentQuote.text}"</p>
-                <p className="hero-quote-author">- {currentQuote.author}</p>
-              </motion.div>
-            </div>
+            {/* Quote card removed */}
 
             <div className="hero-logo-mark">
               <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -507,34 +483,7 @@ export default function Home() {
           box-shadow: 2px 0 8px rgba(0,0,0,0.15);
         }
 
-        .hero-card-quote {
-          background: var(--bg-card);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(196, 144, 106, 0.2);
-          border-radius: var(--radius-xl);
-          padding: 32px 36px;
-          max-width: 380px;
-          box-shadow: var(--shadow-xl);
-          position: relative;
-          z-index: 2;
-        }
-
-        .hero-quote-text {
-          font-family: var(--font-serif);
-          font-style: italic;
-          font-size: var(--text-xl);
-          color: var(--text-primary);
-          line-height: 1.6;
-          margin-bottom: 14px;
-        }
-
-        .hero-quote-author {
-          font-size: var(--text-xs);
-          color: var(--copper);
-          font-weight: 500;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
+        /* Quote card styles removed */
 
         .hero-logo-mark {
           position: absolute;
