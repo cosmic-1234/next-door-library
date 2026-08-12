@@ -261,8 +261,8 @@ export default function AdminBooks() {
                   <td style={{ fontWeight: 600, color: 'var(--brown-rich)' }}>₹{book.pricePerWeek}/wk</td>
                   <td>{book.availableCopies}/{book.totalCopies}</td>
                   <td>{book.condition}</td>
-                  <td>{book.averageRating > 0 ? `⭐ ${book.averageRating.toFixed(1)}` : '—'}</td>
-                  <td>{book.featured ? '✦' : '—'}</td>
+                  <td>{book.averageRating > 0 ? `⭐ ${book.averageRating.toFixed(1)}` : '-'}</td>
+                  <td>{book.featured ? '✦' : '-'}</td>
                   <td>
                     <span className={`badge ${book.isActive ? 'badge-active' : 'badge-unavailable'}`}>
                       {book.isActive ? 'Yes' : 'No'}

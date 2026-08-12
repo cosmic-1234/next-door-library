@@ -6,7 +6,7 @@ const User = require('../models/User');
 // @route   POST /api/rentals
 const requestRental = async (req, res) => {
   try {
-    const { bookId, weeksDuration, deliveryType, deliveryAddress, userNote } = req.body;
+    const { bookId, weeksDuration, deliveryType, deliveryAddress, userNote, paymentStatus, paymentMethod, paymentId } = req.body;
 
     const book = await Book.findById(bookId);
     if (!book) {
@@ -36,7 +36,10 @@ const requestRental = async (req, res) => {
       deliveryType: deliveryType || 'pickup',
       deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : {},
       userNote: userNote || '',
-      status: 'pending'
+      status: 'pending',
+      paymentStatus: paymentStatus || 'pending',
+      paymentMethod: paymentMethod || '',
+      paymentId: paymentId || ''
     });
 
     await rental.populate('book', 'title author cover pricePerWeek');

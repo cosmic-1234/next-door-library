@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiBook, FiClock, FiCheckCircle, FiAlertCircle, FiHeart, FiUser } from 'react-icons/fi';
+import { FiBook, FiClock, FiCheckCircle, FiAlertCircle, FiHeart, FiUser, FiBookOpen, FiXCircle, FiHelpCircle, FiEdit2 } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const STATUS_CONFIG = {
-  pending: { label: 'Pending', color: 'var(--gold)', bg: 'rgba(201,168,76,0.1)', icon: '⏳' },
-  approved: { label: 'Approved', color: 'var(--sage)', bg: 'rgba(122,143,110,0.1)', icon: '✅' },
-  active: { label: 'Reading', color: 'var(--copper)', bg: 'rgba(196,144,106,0.1)', icon: '📖' },
-  returned: { label: 'Returned', color: 'var(--text-muted)', bg: 'rgba(155,123,106,0.08)', icon: '📚' },
-  overdue: { label: 'Overdue', color: 'var(--dusty-rose)', bg: 'rgba(201,137,122,0.1)', icon: '⚠️' },
-  cancelled: { label: 'Cancelled', color: 'var(--text-muted)', bg: 'rgba(155,123,106,0.08)', icon: '❌' },
+  pending: { label: 'Pending', color: 'var(--gold)', bg: 'rgba(201,168,76,0.1)', icon: FiClock },
+  approved: { label: 'Approved', color: 'var(--sage)', bg: 'rgba(122,143,110,0.1)', icon: FiCheckCircle },
+  active: { label: 'Reading', color: 'var(--copper)', bg: 'rgba(196,144,106,0.1)', icon: FiBook },
+  returned: { label: 'Returned', color: 'var(--text-muted)', bg: 'rgba(155,123,106,0.08)', icon: FiBookOpen },
+  overdue: { label: 'Overdue', color: 'var(--dusty-rose)', bg: 'rgba(201,137,122,0.1)', icon: FiAlertCircle },
+  cancelled: { label: 'Cancelled', color: 'var(--text-muted)', bg: 'rgba(155,123,106,0.08)', icon: FiXCircle },
 };
 
 export default function Dashboard() {
@@ -183,9 +183,9 @@ export default function Dashboard() {
                         }
                       }} 
                       className="btn btn-ghost btn-sm"
-                      style={{ padding: '4px 10px', fontSize: '11px' }}
+                      style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
-                      ✏️ Edit Goal
+                      <FiEdit2 size={11} /> Edit Goal
                     </button>
                   </div>
                   
@@ -203,7 +203,7 @@ export default function Dashboard() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
                     <span>{Math.round((booksRead / user.readingChallengeGoal) * 100)}% Complete</span>
                     {booksRead >= user.readingChallengeGoal ? (
-                      <span style={{ color: 'var(--sage)', fontWeight: 600 }}>🎉 Goal achieved! Awesome job!</span>
+                      <span style={{ color: 'var(--sage)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><FiCheckCircle size={11} /> Goal achieved! Awesome job!</span>
                     ) : (
                       <span>{Math.max(0, user.readingChallengeGoal - booksRead)} more book{user.readingChallengeGoal - booksRead > 1 ? 's' : ''} to go</span>
                     )}
@@ -216,10 +216,10 @@ export default function Dashboard() {
           {/* Stats */}
           <div className="dashboard-stats">
             {[
-              { icon: '📖', value: activeCount, label: 'Currently Reading' },
-              { icon: '⏳', value: pendingCount, label: 'Pending Requests' },
-              { icon: '✅', value: booksRead, label: 'Books Completed' },
-              { icon: '❤️', value: wishlist.length, label: 'Wishlist' },
+              { icon: FiBook, value: activeCount, label: 'Currently Reading' },
+              { icon: FiClock, value: pendingCount, label: 'Pending Requests' },
+              { icon: FiCheckCircle, value: booksRead, label: 'Books Completed' },
+              { icon: FiHeart, value: wishlist.length, label: 'Wishlist' },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -228,7 +228,9 @@ export default function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <span className="dashboard-stat-icon">{stat.icon}</span>
+                <span className="dashboard-stat-icon" style={{ color: 'var(--copper)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <stat.icon size={26} />
+                </span>
                 <span className="dashboard-stat-value">{stat.value}</span>
                 <span className="dashboard-stat-label">{stat.label}</span>
               </motion.div>
@@ -255,7 +257,9 @@ export default function Dashboard() {
           {/* Rentals */}
           {filteredRentals.length === 0 ? (
             <motion.div className="dashboard-empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
+              <div style={{ marginBottom: '16px', color: 'var(--copper)', display: 'inline-flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                <FiBookOpen size={48} />
+              </div>
               <h3>No rentals here yet</h3>
               <p>Start by browsing our collection and requesting a book!</p>
               <Link to="/books" className="btn btn-primary" style={{ marginTop: '16px' }}>Browse Books</Link>
@@ -291,8 +295,8 @@ export default function Dashboard() {
                           <Link to={`/books/${rental.book?._id}`} className="rental-book-title">{rental.book?.title}</Link>
                           <p className="rental-book-author">by {rental.book?.author}</p>
                         </div>
-                        <span className="rental-status-badge" style={{ color: config.color, background: config.bg }}>
-                          {config.icon} {config.label}
+                        <span className="rental-status-badge" style={{ color: config.color, background: config.bg, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <config.icon size={12} /> {config.label}
                         </span>
                       </div>
 
@@ -307,7 +311,7 @@ export default function Dashboard() {
                         </div>
                         <div className="rental-meta-item">
                           <span>Delivery</span>
-                          <span>{rental.deliveryType === 'delivery' ? `🏠 Home — ${rental.deliveryAddress?.area || ''}` : '🏪 Pickup'}</span>
+                          <span>{rental.deliveryType === 'delivery' ? `Home - ${rental.deliveryAddress?.area || ''}` : 'Pickup'}</span>
                         </div>
                         {dueDate && rental.status === 'active' && (
                           <div className="rental-meta-item">
@@ -373,8 +377,8 @@ export default function Dashboard() {
 
           {/* Support Ticket Section */}
           <div style={{ marginTop: '60px', backgroundColor: 'var(--cream-light)', padding: '30px', borderRadius: '12px', border: '1px solid var(--cream-dark)', boxShadow: 'var(--shadow-sm)' }}>
-            <h2 className="dashboard-section-title" style={{ marginBottom: '20px', borderBottom: '1px solid var(--cream-dark)', paddingBottom: '10px' }}>
-              🌳 Contact Support Desk
+            <h2 className="dashboard-section-title" style={{ marginBottom: '20px', borderBottom: '1px solid var(--cream-dark)', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FiHelpCircle size={22} style={{ color: 'var(--copper)' }} /> Contact Support Desk
             </h2>
             <form onSubmit={handleSupportSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>

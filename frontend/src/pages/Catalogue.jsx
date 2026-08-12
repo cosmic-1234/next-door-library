@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFilter, FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiX, FiChevronLeft, FiChevronRight, FiBookOpen } from 'react-icons/fi';
 import api from '../api/axios';
 import BookCard from '../components/BookCard';
 
@@ -210,7 +210,7 @@ export default function Catalogue() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <div className="empty-icon">📚</div>
+            <div className="empty-icon"><FiBookOpen size={48} /></div>
             <h3 className="empty-title">No books found</h3>
             <p className="empty-desc">Try adjusting your filters or search term.</p>
             <button className="btn btn-primary" onClick={clearFilters}>Clear Filters</button>

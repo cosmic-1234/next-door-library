@@ -17,7 +17,7 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(form.email, form.password);
-      toast.success(`Welcome back, ${user.name.split(' ')[0]}! 📚`);
+      toast.success(`Welcome back, ${user.name.split(' ')[0]}!`);
       navigate(user.role === 'admin' ? '/admin' : '/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed. Please try again.');
@@ -54,7 +54,7 @@ export default function Login() {
 
           <div className="auth-left-quote">
             <p>"Not all those who wander are lost."</p>
-            <span>— J.R.R. Tolkien</span>
+            <span>- J.R.R. Tolkien</span>
           </div>
         </motion.div>
       </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useInView, animate } from 'framer-motion';
 import api from '../api/axios';
 import BookCard from '../components/BookCard';
+import { FiBookOpen, FiTruck, FiRefreshCw, FiSearch, FiMail, FiAward, FiHome, FiBook, FiFeather } from 'react-icons/fi';
 
 // Animated counter hook
 function useCounter(target, inView) {
@@ -97,18 +98,18 @@ export default function Home() {
             </div>
 
             <div className="hero-trust">
-              <div className="hero-trust-item">
-                <span className="hero-trust-icon">📚</span>
+              <div className="hero-trust-item" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FiBookOpen size={16} style={{ color: 'var(--copper)' }} />
                 <span>100+ curated books</span>
               </div>
               <div className="hero-trust-dot" />
-              <div className="hero-trust-item">
-                <span className="hero-trust-icon">🏠</span>
+              <div className="hero-trust-item" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FiTruck size={16} style={{ color: 'var(--copper)' }} />
                 <span>Home delivery in Nagpur</span>
               </div>
               <div className="hero-trust-dot" />
-              <div className="hero-trust-item">
-                <span className="hero-trust-icon">♻️</span>
+              <div className="hero-trust-item" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FiRefreshCw size={14} style={{ color: 'var(--copper)' }} />
                 <span>Sustainable reading</span>
               </div>
             </div>
@@ -141,7 +142,7 @@ export default function Home() {
                 transition={{ duration: 0.5 }}
               >
                 <p className="hero-quote-text">"{currentQuote.text}"</p>
-                <p className="hero-quote-author">— {currentQuote.author}</p>
+                <p className="hero-quote-author">- {currentQuote.author}</p>
               </motion.div>
             </div>
 
@@ -219,10 +220,10 @@ export default function Home() {
             <div className="quote-mark">"</div>
             <blockquote className="quote-text">
               Reading is an activity that slows you down when all of us are in such a hurry.
-              When you develop this habit early, it helps you be a better human —
+              When you develop this habit early, it helps you be a better human -
               more empathetic, more emotionally aware.
             </blockquote>
-            <div className="quote-source">— The Philosophy of Next Door Library</div>
+            <div className="quote-source">- The Philosophy of Next Door Library</div>
           </motion.div>
         </div>
       </section>
@@ -237,10 +238,10 @@ export default function Home() {
 
           <div className="how-grid">
             {[
-              { step: '01', icon: '🔍', title: 'Browse & Discover', desc: 'Explore our curated catalogue. Filter by genre, price, or availability. Find your next obsession.' },
-              { step: '02', icon: '📬', title: 'Request to Rent', desc: 'Select your book and duration (1–8 weeks). Choose home delivery or pickup in Nagpur. We\'ll confirm within 24 hours.' },
-              { step: '03', icon: '📖', title: 'Read & Savour', desc: 'Lose yourself in the pages. Read at your own pace. Mark it read on your profile and leave a review.' },
-              { step: '04', icon: '🔄', title: 'Return & Repeat', desc: 'Return the book, update your reading history, and pick your next adventure. Your shelf, unlimited.' },
+              { step: '01', icon: FiSearch, title: 'Browse & Discover', desc: 'Explore our curated catalogue. Filter by genre, price, or availability. Find your next obsession.' },
+              { step: '02', icon: FiMail, title: 'Request to Rent', desc: 'Select your book and duration (1-8 weeks). Choose home delivery or pickup in Nagpur. We\'ll confirm within 24 hours.' },
+              { step: '03', icon: FiBookOpen, title: 'Read & Savour', desc: 'Lose yourself in the pages. Read at your own pace. Mark it read on your profile and leave a review.' },
+              { step: '04', icon: FiRefreshCw, title: 'Return & Repeat', desc: 'Return the book, update your reading history, and pick your next adventure. Your shelf, unlimited.' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -250,7 +251,9 @@ export default function Home() {
                 transition={{ duration: 0.6, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div className="how-step-num">{item.step}</div>
-                <div className="how-icon">{item.icon}</div>
+                <div className="how-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--copper)' }}>
+                  <item.icon size={26} />
+                </div>
                 <h3 className="how-title">{item.title}</h3>
                 <p className="how-desc">{item.desc}</p>
               </motion.div>
@@ -280,10 +283,10 @@ export default function Home() {
 
             <div className="why-right">
               {[
-                { icon: '🎓', title: 'For Students & Kids', desc: 'School libraries don\'t always have the books kids want. We do — at prices that don\'t strain budgets.' },
-                { icon: '👩‍👧', title: 'For Home Readers', desc: 'Love reading but feel guilty spending on books? Enjoy without the guilt. Read more, spend less.' },
-                { icon: '🤔', title: 'Try Before You Commit', desc: 'Unsure if a book is for you? Rent it cheaply. If you love it, buy it. If not — no big loss.' },
-                { icon: '🌱', title: 'Sustainable Reading', desc: 'One book, many readers. Less printing, less waste. Reading circles are the original green habit.' },
+                { icon: FiAward, title: 'For Students & Kids', desc: 'School libraries don\'t always have the books kids want. We do - at prices that don\'t strain budgets.' },
+                { icon: FiHome, title: 'For Home Readers', desc: 'Love reading but feel guilty spending on books? Enjoy without the guilt. Read more, spend less.' },
+                { icon: FiBook, title: 'Try Before You Commit', desc: 'Unsure if a book is for you? Rent it cheaply. If you love it, buy it. If not - no big loss.' },
+                { icon: FiFeather, title: 'Sustainable Reading', desc: 'One book, many readers. Less printing, less waste. Reading circles are the original green habit.' },
               ].map((item, i) => (
                 <motion.div
                   key={i}
@@ -293,7 +296,9 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
                 >
-                  <div className="why-item-icon">{item.icon}</div>
+                  <div className="why-item-icon" style={{ color: 'var(--copper)' }}>
+                    <item.icon size={26} />
+                  </div>
                   <div>
                     <h4 className="why-item-title">{item.title}</h4>
                     <p className="why-item-desc">{item.desc}</p>

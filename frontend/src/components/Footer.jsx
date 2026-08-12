@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { FiInstagram, FiHeart } from 'react-icons/fi';
+import { FiMail, FiHeart, FiMapPin, FiClock } from 'react-icons/fi';
 
 export default function Footer() {
   return (
@@ -17,13 +17,11 @@ export default function Footer() {
               Books that deserve to be loved again.
             </p>
             <a
-              href="https://instagram.com/next_door_library"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="mailto:admin@nextdoorlibrary.in"
               className="footer-instagram"
             >
-              <FiInstagram size={16} />
-              @next_door_library
+              <FiMail size={16} />
+              admin@nextdoorlibrary.in
             </a>
           </div>
 
@@ -56,7 +54,7 @@ export default function Footer() {
               </div>
               <div className="footer-step">
                 <span className="footer-step-num">04</span>
-                <span>Read, enjoy, return — repeat</span>
+                <span>Read, enjoy, return - repeat</span>
               </div>
             </div>
           </div>
@@ -64,16 +62,22 @@ export default function Footer() {
           {/* Contact */}
           <div className="footer-col">
             <h4 className="footer-col-title">Contact</h4>
-            <div className="footer-contact-info">
-              <p>📍 Nagpur, Maharashtra</p>
-              <p>📸 DM us on Instagram</p>
-              <p>🕐 We respond within 24 hours</p>
+            <div className="footer-contact-info" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <p style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <FiMapPin size={14} style={{ color: 'var(--copper)' }} /> Nagpur, Maharashtra
+              </p>
+              <p style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <FiMail size={14} style={{ color: 'var(--copper)' }} /> admin@nextdoorlibrary.in
+              </p>
+              <p style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <FiClock size={14} style={{ color: 'var(--copper)' }} /> We respond within 24 hours
+              </p>
             </div>
             <div className="footer-quote">
               <p className="footer-quote-text">
                 "A reader lives a thousand lives before he dies."
               </p>
-              <p className="footer-quote-author">— George R.R. Martin</p>
+              <p className="footer-quote-author">- George R.R. Martin</p>
             </div>
           </div>
         </div>

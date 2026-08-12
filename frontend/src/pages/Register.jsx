@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiUser, FiMail, FiLock, FiPhone, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiPhone, FiEye, FiEyeOff, FiBookOpen, FiTruck, FiMessageSquare, FiUsers } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 export default function Register() {
   const { register } = useAuth();
@@ -12,7 +13,11 @@ export default function Register() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const [otpStep, setOtpStep] = useState('details'); // 'details' | 'verify'
+  const [otp, setOtp] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) {
       toast.error('Passwords do not match');
@@ -22,13 +27,42 @@ export default function Register() {
       toast.error('Password must be at least 6 characters');
       return;
     }
+    if (!form.email || !form.name) {
+      toast.error('Please fill in Name and Email');
+      return;
+    }
+
+    setSendingOtp(true);
+    try {
+      const res = await api.post('/auth/send-otp', { email: form.email });
+      if (res.data.success) {
+        setOtpStep('verify');
+        toast.success('Verification code sent to your email!');
+        if (res.data.otp) {
+          toast(`[DEV MODE] OTP Code: ${res.data.otp}`, { icon: '🔑', duration: 10000 });
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send verification code');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    if (!otp || otp.length < 6) {
+      toast.error('Please enter the 6-digit verification code');
+      return;
+    }
+
     setLoading(true);
     try {
-      const user = await register(form.name, form.email, form.password, form.phone);
-      toast.success(`Welcome to Next Door Library, ${user.name.split(' ')[0]}! 🌳`);
+      const user = await register(form.name, form.email, form.password, form.phone, otp);
+      toast.success(`Welcome to Next Door Library, ${user.name.split(' ')[0]}!`);
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Registration failed. Please try again.');
+      toast.error(err.response?.data?.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -58,17 +92,23 @@ export default function Register() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {['📚 100+ curated books at ₹15–30/week', '🏠 Home delivery across Nagpur', '💬 Community forum & reading groups', '👥 See what your friends are reading'].map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(247,240,227,0.75)', fontSize: 'var(--text-sm)' }}>
-                <span>{item}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {[
+              { icon: FiBookOpen, text: '100+ curated books at ₹15–30/week' },
+              { icon: FiTruck, text: 'Home delivery across Nagpur' },
+              { icon: FiMessageSquare, text: 'Community forum & reading groups' },
+              { icon: FiUsers, text: 'See what your friends are reading' }
+            ].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'rgba(247,240,227,0.85)', fontSize: 'var(--text-sm)' }}>
+                <item.icon size={18} style={{ color: 'var(--copper-light)', flexShrink: 0 }} />
+                <span>{item.text}</span>
               </div>
             ))}
           </div>
 
           <div className="auth-left-quote">
             <p>"We read to know we are not alone."</p>
-            <span>— C.S. Lewis</span>
+            <span>- C.S. Lewis</span>
           </div>
         </motion.div>
       </div>
@@ -89,95 +129,139 @@ export default function Register() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">Full Name</label>
-                <div className="input-icon-wrap">
-                  <FiUser size={16} className="input-icon" />
-                  <input
-                    type="text"
-                    className="form-input with-icon"
-                    placeholder="Your full name"
-                    value={form.name}
-                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                    required
-                    id="register-name"
-                  />
+          {otpStep === 'details' ? (
+            <form onSubmit={handleSendOtp} className="auth-form">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Full Name</label>
+                  <div className="input-icon-wrap">
+                    <FiUser size={16} className="input-icon" />
+                    <input
+                      type="text"
+                      className="form-input with-icon"
+                      placeholder="Your full name"
+                      value={form.name}
+                      onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                      required
+                      id="register-name"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Email Address</label>
+                  <div className="input-icon-wrap">
+                    <FiMail size={16} className="input-icon" />
+                    <input
+                      type="email"
+                      className="form-input with-icon"
+                      placeholder="your@email.com"
+                      value={form.email}
+                      onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                      required
+                      id="register-email"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Phone Number</label>
+                  <div className="input-icon-wrap">
+                    <FiPhone size={16} className="input-icon" />
+                    <input
+                      type="tel"
+                      className="form-input with-icon"
+                      placeholder="For rental coordination"
+                      value={form.phone}
+                      onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                      id="register-phone"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <div className="input-icon-wrap">
+                    <FiLock size={16} className="input-icon" />
+                    <input
+                      type={showPass ? 'text' : 'password'}
+                      className="form-input with-icon with-icon-right"
+                      placeholder="Min 6 characters"
+                      value={form.password}
+                      onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                      required
+                      id="register-password"
+                    />
+                    <button type="button" className="input-icon-right" onClick={() => setShowPass(!showPass)}>
+                      {showPass ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Confirm Password</label>
+                  <div className="input-icon-wrap">
+                    <FiLock size={16} className="input-icon" />
+                    <input
+                      type={showPass ? 'text' : 'password'}
+                      className="form-input with-icon"
+                      placeholder="Repeat password"
+                      value={form.confirmPassword}
+                      onChange={e => setForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                      required
+                      id="register-confirm-password"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">Email Address</label>
-                <div className="input-icon-wrap">
-                  <FiMail size={16} className="input-icon" />
-                  <input
-                    type="email"
-                    className="form-input with-icon"
-                    placeholder="your@email.com"
-                    value={form.email}
-                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                    required
-                    id="register-email"
-                  />
+              <button type="submit" className="btn btn-primary w-full btn-lg" disabled={sendingOtp} id="register-submit-btn">
+                {sendingOtp ? 'Sending Verification OTP...' : 'Send Verification OTP'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegisterSubmit} className="auth-form">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ padding: '16px', border: '1px solid var(--cream-dark)', borderRadius: '8px', backgroundColor: 'rgba(196, 144, 106, 0.05)', textAlign: 'center', marginBottom: '8px' }}>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: '0 0 4px 0', lineHeight: 1.5 }}>
+                    We've sent a 6-digit verification code to
+                  </p>
+                  <strong style={{ color: 'var(--brown-rich)', fontSize: 'var(--text-sm)' }}>{form.email}</strong>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Verification Code (OTP)</label>
+                  <div className="input-icon-wrap">
+                    <FiLock size={16} className="input-icon" />
+                    <input
+                      type="text"
+                      className="form-input with-icon"
+                      placeholder="Enter 6-digit OTP"
+                      value={otp}
+                      onChange={e => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                      maxLength={6}
+                      required
+                      id="register-otp"
+                      style={{ textAlign: 'center', letterSpacing: '0.4em', fontSize: '1.2rem', fontWeight: 700 }}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">Phone Number</label>
-                <div className="input-icon-wrap">
-                  <FiPhone size={16} className="input-icon" />
-                  <input
-                    type="tel"
-                    className="form-input with-icon"
-                    placeholder="For rental coordination"
-                    value={form.phone}
-                    onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-                    id="register-phone"
-                  />
-                </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setOtpStep('details')} style={{ flex: 1 }}>
+                  Back
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={loading} style={{ flex: 2 }} id="register-verify-btn">
+                  {loading ? 'Verifying...' : 'Verify & Register'}
+                </button>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <div className="input-icon-wrap">
-                  <FiLock size={16} className="input-icon" />
-                  <input
-                    type={showPass ? 'text' : 'password'}
-                    className="form-input with-icon with-icon-right"
-                    placeholder="Min 6 characters"
-                    value={form.password}
-                    onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                    required
-                    id="register-password"
-                  />
-                  <button type="button" className="input-icon-right" onClick={() => setShowPass(!showPass)}>
-                    {showPass ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Confirm Password</label>
-                <div className="input-icon-wrap">
-                  <FiLock size={16} className="input-icon" />
-                  <input
-                    type={showPass ? 'text' : 'password'}
-                    className="form-input with-icon"
-                    placeholder="Repeat password"
-                    value={form.confirmPassword}
-                    onChange={e => setForm(p => ({ ...p, confirmPassword: e.target.value }))}
-                    required
-                    id="register-confirm-password"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <button type="submit" className="btn btn-primary w-full btn-lg" disabled={loading} id="register-submit-btn">
-              {loading ? 'Creating Account...' : 'Join the Library 🌳'}
-            </button>
-          </form>
+              <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '8px' }}>
+                Didn't receive the email? <span onClick={handleSendOtp} style={{ color: 'var(--copper)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>Resend code</span>
+              </p>
+            </form>
+          )}
 
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textAlign: 'center', marginTop: '16px', lineHeight: '1.5' }}>
             By joining, you agree to our terms. We'll use your contact info solely for rental coordination.

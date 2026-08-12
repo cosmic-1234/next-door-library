@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiStar, FiBook, FiMapPin, FiTruck, FiX, FiHeart, FiArrowLeft, FiBookOpen, FiAlertTriangle } from 'react-icons/fi';
+import { FiArrowLeft, FiHeart, FiShare2, FiStar, FiCalendar, FiBookOpen, FiClock, FiMapPin, FiTruck, FiAlertTriangle, FiX, FiSmartphone, FiCreditCard, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import BookCard from '../components/BookCard';
@@ -19,32 +19,72 @@ function RentModal({ book, onClose }) {
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [step, setStep] = useState('checkout'); // 'checkout' | 'payment' | 'processing'
+  const [payMethod, setPayMethod] = useState('cod'); // 'cod' | 'upi' | 'card'
+  const [cardNo, setCardNo] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [processingStatus, setProcessingStatus] = useState('');
+
   const totalCost = book.pricePerWeek * weeks;
   const dueDate = new Date(Date.now() + weeks * 7 * 24 * 60 * 60 * 1000);
 
-  const handleSubmit = async (e) => {
+  const handleProceedToPayment = (e) => {
     e.preventDefault();
     if (!user) { navigate('/login'); return; }
     if (deliveryType === 'delivery' && !area) {
       toast.error('Please enter your area for delivery');
       return;
     }
+    setStep('payment');
+  };
 
-    setLoading(true);
+  const handlePaymentSubmit = async () => {
+    if (payMethod === 'upi') {
+      if (!upiId.trim() && !confirm('Simulating QR Scan: Did you scan the QR code to pay? Click OK to confirm payment, or Cancel to enter a UPI ID instead.')) {
+        return;
+      }
+    }
+    if (payMethod === 'card') {
+      if (!cardName.trim() || cardNo.replace(/\s+/g, '').length < 16 || cardExpiry.length < 5 || cardCvv.length < 3) {
+        toast.error('Please fill in valid Card Details');
+        return;
+      }
+    }
+
+    setStep('processing');
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     try {
+      setProcessingStatus('Initiating secure connection with gateway...');
+      await sleep(1000);
+      setProcessingStatus('Verifying authorization with your bank...');
+      await sleep(1200);
+      setProcessingStatus('Finalizing transaction...');
+      await sleep(800);
+
+      const txnId = payMethod === 'cod' ? '' : 'TXN_' + Math.random().toString(36).substring(2, 10).toUpperCase();
+      const pStatus = payMethod === 'cod' ? 'cod' : 'paid';
+      const pMethod = payMethod.toUpperCase();
+
       await api.post('/rentals', {
         bookId: book._id,
         weeksDuration: weeks,
         deliveryType,
         deliveryAddress: { area, pincode },
-        userNote: note
+        userNote: note,
+        paymentStatus: pStatus,
+        paymentMethod: pMethod,
+        paymentId: txnId
       });
-      toast.success('🎉 Rental request submitted! We\'ll contact you within 24 hours.');
+
+      toast.success('Payment successful & rental request submitted!');
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to submit request');
-    } finally {
-      setLoading(false);
+      toast.error(err.response?.data?.message || 'Transaction failed. Please try again.');
+      setStep('payment');
     }
   };
 
@@ -65,113 +105,237 @@ function RentModal({ book, onClose }) {
           <p className="rent-modal-book">"{book.title}" by {book.author}</p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Duration */}
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label className="form-label">Duration (weeks)</label>
-            <div className="weeks-selector">
-              {[1, 2, 3, 4, 6, 8].map(w => (
+        {step === 'checkout' && (
+          <form onSubmit={handleProceedToPayment}>
+            {/* Duration */}
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label className="form-label">Duration (weeks)</label>
+              <div className="weeks-selector">
+                {[1, 2, 3, 4, 6, 8].map(w => (
+                  <button
+                    key={w}
+                    type="button"
+                    className={`week-btn ${weeks === w ? 'week-btn-active' : ''}`}
+                    onClick={() => setWeeks(w)}
+                  >
+                    {w}w
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cost Summary */}
+            <div className="rent-summary">
+              <div className="rent-summary-row">
+                <span>₹{book.pricePerWeek} × {weeks} week{weeks > 1 ? 's' : ''}</span>
+                <span className="rent-summary-total">₹{totalCost}</span>
+              </div>
+              <div className="rent-summary-row" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                <span>Due date</span>
+                <span>{dueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              </div>
+            </div>
+
+            {/* Delivery */}
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label className="form-label">How would you like to receive the book?</label>
+              <div className="delivery-options">
                 <button
-                  key={w}
                   type="button"
-                  className={`week-btn ${weeks === w ? 'week-btn-active' : ''}`}
-                  onClick={() => setWeeks(w)}
+                  className={`delivery-option ${deliveryType === 'pickup' ? 'delivery-option-active' : ''}`}
+                  onClick={() => setDeliveryType('pickup')}
                 >
-                  {w}w
+                  <FiMapPin size={18} />
+                  <div>
+                    <div className="delivery-option-title">Self Pickup</div>
+                    <div className="delivery-option-desc">Coordinate via email (admin@nextdoorlibrary.in)</div>
+                  </div>
                 </button>
-              ))}
+                <button
+                  type="button"
+                  className={`delivery-option ${deliveryType === 'delivery' ? 'delivery-option-active' : ''}`}
+                  onClick={() => setDeliveryType('delivery')}
+                >
+                  <FiTruck size={18} />
+                  <div>
+                    <div className="delivery-option-title">Home Delivery</div>
+                    <div className="delivery-option-desc">Within Nagpur city</div>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Cost Summary */}
-          <div className="rent-summary">
-            <div className="rent-summary-row">
-              <span>₹{book.pricePerWeek} × {weeks} week{weeks > 1 ? 's' : ''}</span>
-              <span className="rent-summary-total">₹{totalCost}</span>
-            </div>
-            <div className="rent-summary-row" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-              <span>Due date</span>
-              <span>{dueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-            </div>
-          </div>
+            {/* Delivery Address */}
+            <AnimatePresence>
+              {deliveryType === 'delivery' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ overflow: 'hidden', marginBottom: '16px' }}
+                >
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Area / Locality</label>
+                      <select className="form-input form-select" value={area} onChange={e => setArea(e.target.value)} required>
+                        <option value="">Select area</option>
+                        {NAGPUR_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Pincode</label>
+                      <input className="form-input" placeholder="e.g. 440010" value={pincode} onChange={e => setPincode(e.target.value)} maxLength={6} />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* Delivery */}
-          <div className="form-group" style={{ marginBottom: '16px' }}>
-            <label className="form-label">How would you like to receive the book?</label>
-            <div className="delivery-options">
+            {/* Note */}
+            <div className="form-group" style={{ marginBottom: '24px' }}>
+              <label className="form-label">Message (optional)</label>
+              <textarea
+                className="form-input form-textarea"
+                placeholder="Any special requests or questions..."
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                rows={2}
+                style={{ minHeight: '70px' }}
+              />
+            </div>
+
+            <div className="rent-disclaimer">
+              <FiAlertTriangle size={14} />
+              <p>We'll contact you via email at admin@nextdoorlibrary.in within 24 hours to confirm. Choose payment method on next step.</p>
+            </div>
+
+            <button type="submit" className="btn btn-primary w-full btn-lg" style={{ marginTop: '16px' }}>
+              Proceed to Payment - ₹{totalCost}
+            </button>
+          </form>
+        )}
+
+        {step === 'payment' && (
+          <div>
+            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>Select Payment Method</h3>
+            
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
               <button
                 type="button"
-                className={`delivery-option ${deliveryType === 'pickup' ? 'delivery-option-active' : ''}`}
-                onClick={() => setDeliveryType('pickup')}
+                className={`delivery-option ${payMethod === 'upi' ? 'delivery-option-active' : ''}`}
+                onClick={() => setPayMethod('upi')}
+                style={{ flex: 1, padding: '12px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
               >
-                <FiMapPin size={18} />
-                <div>
-                  <div className="delivery-option-title">Self Pickup</div>
-                  <div className="delivery-option-desc">Coordinate via Instagram DM</div>
-                </div>
+                <FiSmartphone size={20} style={{ color: payMethod === 'upi' ? 'var(--cream)' : 'var(--copper)' }} />
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>UPI App / QR</span>
               </button>
               <button
                 type="button"
-                className={`delivery-option ${deliveryType === 'delivery' ? 'delivery-option-active' : ''}`}
-                onClick={() => setDeliveryType('delivery')}
+                className={`delivery-option ${payMethod === 'card' ? 'delivery-option-active' : ''}`}
+                onClick={() => setPayMethod('card')}
+                style={{ flex: 1, padding: '12px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
               >
-                <FiTruck size={18} />
-                <div>
-                  <div className="delivery-option-title">Home Delivery</div>
-                  <div className="delivery-option-desc">Within Nagpur city</div>
-                </div>
+                <FiCreditCard size={20} style={{ color: payMethod === 'card' ? 'var(--cream)' : 'var(--copper)' }} />
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>Credit Card</span>
+              </button>
+              <button
+                type="button"
+                className={`delivery-option ${payMethod === 'cod' ? 'delivery-option-active' : ''}`}
+                onClick={() => setPayMethod('cod')}
+                style={{ flex: 1, padding: '12px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
+              >
+                <FiDollarSign size={20} style={{ color: payMethod === 'cod' ? 'var(--cream)' : 'var(--copper)' }} />
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>Pay on Delivery</span>
               </button>
             </div>
-          </div>
-
-          {/* Delivery Address */}
-          <AnimatePresence>
-            {deliveryType === 'delivery' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                style={{ overflow: 'hidden', marginBottom: '16px' }}
-              >
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Area / Locality</label>
-                    <select className="form-input form-select" value={area} onChange={e => setArea(e.target.value)} required>
-                      <option value="">Select area</option>
-                      {NAGPUR_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Pincode</label>
-                    <input className="form-input" placeholder="e.g. 440010" value={pincode} onChange={e => setPincode(e.target.value)} maxLength={6} />
-                  </div>
+            
+            {/* UPI Section */}
+            {payMethod === 'upi' && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid var(--cream-dark)', borderRadius: '8px', backgroundColor: 'var(--cream-light)', marginBottom: '16px' }}>
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=nextdoorlibrary@okaxis%26pn=NextDoorLibrary Nagpur%26am=${totalCost}%26cu=INR`} 
+                  alt="UPI QR Code" 
+                  style={{ width: '130px', height: '130px', border: '4px solid white', borderRadius: '4px', boxShadow: 'var(--shadow-sm)' }}
+                />
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>Scan QR Code with GPay / PhonePe to pay</p>
+                <div style={{ width: '100%', marginTop: '6px' }}>
+                  <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Or Enter UPI ID</label>
+                  <input className="form-input" placeholder="e.g. username@okhdfcbank" value={upiId} onChange={e => setUpiId(e.target.value)} />
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
-
-          {/* Note */}
-          <div className="form-group" style={{ marginBottom: '24px' }}>
-            <label className="form-label">Message (optional)</label>
-            <textarea
-              className="form-input form-textarea"
-              placeholder="Any special requests or questions..."
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              rows={2}
-              style={{ minHeight: '70px' }}
-            />
+            
+            {/* Card Section */}
+            {payMethod === 'card' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', border: '1px solid var(--cream-dark)', borderRadius: '8px', backgroundColor: 'var(--cream-light)', marginBottom: '16px' }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Cardholder Name</label>
+                  <input className="form-input" placeholder="Name on Card" value={cardName} onChange={e => setCardName(e.target.value)} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Card Number</label>
+                  <input className="form-input" placeholder="1234 5678 1234 5678" value={cardNo} onChange={e => {
+                    const val = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+                    const matches = val.match(/\d{4,16}/g);
+                    const match = (matches && matches[0]) || '';
+                    const parts = [];
+                    for (let i=0, len=match.length; i<len; i+=4) {
+                      parts.push(match.substring(i, i+4));
+                    }
+                    if (parts.length > 0) {
+                      setCardNo(parts.join(' '));
+                    } else {
+                      setCardNo(val);
+                    }
+                  }} maxLength={19} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Expiry Date</label>
+                    <input className="form-input" placeholder="MM/YY" value={cardExpiry} onChange={e => {
+                      const val = e.target.value.replace(/\//g, '').replace(/[^0-9]/gi, '');
+                      if (val.length >= 2) {
+                        setCardExpiry(val.substring(0, 2) + '/' + val.substring(2, 4));
+                      } else {
+                        setCardExpiry(val);
+                      }
+                    }} maxLength={5} />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>CVV</label>
+                    <input className="form-input" type="password" placeholder="•••" value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/[^0-9]/gi, ''))} maxLength={3} />
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* COD Section */}
+            {payMethod === 'cod' && (
+              <div style={{ padding: '16px', border: '1px solid var(--cream-dark)', borderRadius: '8px', backgroundColor: 'var(--cream-light)', marginBottom: '16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <FiCheckCircle size={18} style={{ color: 'var(--copper)', flexShrink: 0, marginTop: '2px' }} />
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+                  <strong>Pay on Delivery / Collection</strong>: You will pay ₹{totalCost} at the time of delivery or self-pickup. We will confirm your request via email (admin@nextdoorlibrary.in).
+                </p>
+              </div>
+            )}
+            
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setStep('checkout')} style={{ flex: 1 }}>Back</button>
+              <button type="button" className="btn btn-primary" onClick={handlePaymentSubmit} style={{ flex: 2 }}>
+                {payMethod === 'cod' ? 'Complete Request' : `Pay ₹${totalCost}`}
+              </button>
+            </div>
           </div>
+        )}
 
-          <div className="rent-disclaimer">
-            <FiAlertTriangle size={14} />
-            <p>We'll contact you via Instagram or phone within 24 hours to confirm. Payment is collected at delivery/pickup.</p>
+        {step === 'processing' && (
+          <div style={{ textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+            <div className="spinner" style={{ margin: '0 auto', width: '48px', height: '48px' }} />
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--brown-rich)', margin: 0 }}>Processing Rental</h3>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>{processingStatus}</p>
           </div>
-
-          <button type="submit" className="btn btn-primary w-full btn-lg" disabled={loading} style={{ marginTop: '16px' }}>
-            {loading ? 'Submitting...' : `Submit Request — ₹${totalCost} total`}
-          </button>
-        </form>
+        )}
 
         <style>{`
           .rent-modal-header { margin-bottom: 24px; }
@@ -475,7 +639,11 @@ export default function BookDetail() {
                   disabled={!isAvailable}
                   id="rent-now-btn"
                 >
-                  {isAvailable ? '📚 Request to Rent' : 'Currently on Loan'}
+                  {isAvailable ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                      <FiBookOpen size={16} /> Request to Rent
+                    </span>
+                  ) : 'Currently on Loan'}
                 </button>
                 <button className={`btn btn-ghost wishlist-btn ${wishlisted ? 'wishlisted' : ''}`} onClick={handleWishlist} id="wishlist-btn">
                   <FiHeart size={18} fill={wishlisted ? 'currentColor' : 'none'} />

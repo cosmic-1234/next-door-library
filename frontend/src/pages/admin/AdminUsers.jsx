@@ -91,7 +91,7 @@ export default function AdminUsers() {
                     </div>
                   </td>
                   <td style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{user.email}</td>
-                  <td style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{user.phone || '—'}</td>
+                  <td style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{user.phone || '-'}</td>
                   <td style={{ textAlign: 'center' }}>{user.totalBooksRead || 0}</td>
                   <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(user.createdAt).toLocaleDateString('en-IN')}</td>
                   <td>

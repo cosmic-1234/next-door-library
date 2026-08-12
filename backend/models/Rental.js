@@ -52,6 +52,19 @@ const rentalSchema = new mongoose.Schema({
   returnedAt: {
     type: Date
   },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'cod'],
+    default: 'pending'
+  },
+  paymentMethod: {
+    type: String,
+    default: ''
+  },
+  paymentId: {
+    type: String,
+    default: ''
+  },
   requestedAt: {
     type: Date,
     default: Date.now

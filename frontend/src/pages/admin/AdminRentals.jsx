@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiCheck, FiX, FiClock, FiPackage, FiRefreshCw } from 'react-icons/fi';
+import { FiCheck, FiX, FiClock, FiPackage, FiRefreshCw, FiPhone, FiMail, FiMapPin } from 'react-icons/fi';
 import api from '../../api/axios';
 
 const STATUS_OPTIONS = ['pending', 'approved', 'active', 'returned', 'overdue', 'cancelled'];
@@ -127,26 +127,37 @@ export default function AdminRentals() {
                   <motion.tr key={rental._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}>
                     <td>
                       <p style={{ fontWeight: 500 }}>{rental.user?.name}</p>
-                      <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>📞 {rental.user?.phone || 'No phone'}</p>
-                      <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>✉ {rental.user?.email}</p>
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <FiPhone size={11} style={{ color: 'var(--text-muted)' }} /> {rental.user?.phone || 'No phone'}
+                      </p>
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <FiMail size={11} style={{ color: 'var(--text-muted)' }} /> {rental.user?.email}
+                      </p>
                     </td>
                     <td>
                       <p style={{ fontWeight: 600 }}>{rental.book?.title}</p>
                       <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>by {rental.book?.author}</p>
                     </td>
                     <td>{rental.weeksDuration} week{rental.weeksDuration > 1 ? 's' : ''}</td>
-                    <td style={{ fontWeight: 700, color: 'var(--brown-rich)' }}>₹{rental.totalCost}</td>
+                    <td>
+                      <div style={{ fontWeight: 700, color: 'var(--brown-rich)' }}>₹{rental.totalCost}</div>
+                      <div style={{ fontSize: '10px', color: rental.paymentStatus === 'paid' ? 'var(--sage)' : 'var(--gold)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>
+                        {rental.paymentStatus === 'paid' ? `Paid (${rental.paymentMethod})` : rental.paymentMethod === 'COD' ? 'COD (Pending)' : 'Unpaid'}
+                      </div>
+                    </td>
                     <td>
                       <p style={{ textTransform: 'capitalize', fontSize: 'var(--text-sm)' }}>{rental.deliveryType}</p>
                       {rental.deliveryType === 'delivery' && rental.deliveryAddress?.area && (
-                        <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>📍 {rental.deliveryAddress.area} {rental.deliveryAddress.pincode}</p>
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <FiMapPin size={11} style={{ color: 'var(--text-muted)' }} /> {rental.deliveryAddress.area} {rental.deliveryAddress.pincode}
+                        </p>
                       )}
                     </td>
                     <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       {new Date(rental.requestedAt).toLocaleDateString('en-IN')}
                     </td>
                     <td style={{ fontSize: '12px', color: rental.dueDate && new Date(rental.dueDate) < new Date() ? 'var(--dusty-rose)' : 'var(--text-muted)' }}>
-                      {rental.dueDate ? new Date(rental.dueDate).toLocaleDateString('en-IN') : '—'}
+                      {rental.dueDate ? new Date(rental.dueDate).toLocaleDateString('en-IN') : '-'}
                     </td>
                     <td>
                       <select

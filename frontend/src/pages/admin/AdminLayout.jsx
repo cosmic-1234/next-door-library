@@ -85,7 +85,7 @@ export default function AdminLayout() {
           <button className="admin-topbar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <FiMenu size={20} />
           </button>
-          <span className="admin-topbar-title">Next Door Library — Admin</span>
+          <span className="admin-topbar-title">Next Door Library - Admin</span>
         </div>
 
         <div className="admin-content">
