@@ -7,12 +7,55 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import BookCard from '../components/BookCard';
 
-const NAGPUR_AREAS = ['Dharampeth', 'Sitabuldi', 'Gandhibagh', 'Sadar', 'Civil Lines', 'Ramdaspeth', 'Bajaj Nagar', 'Manewada', 'Wardha Road', 'Amravati Road', 'Hingna', 'Katol Road', 'Other'];
+const NAGPUR_AREAS = ['Dharampeth', 'Sitabuldi', 'Gandhibagh', 'Sadar', 'Civil Lines', 'Ramdaspeth', 'Bajaj Nagar', 'Manewada', 'Wardha Road', 'Amravati Road', 'Hingna', 'Katol Road', 'Other (Nagpur)'];
+const IIMU_AREAS = [
+  'Hostel Block (H1–H6)',
+  'Academic Block (A-Block)',
+  'Classroom & Admin Complex',
+  'MDP / Executive Hostel',
+  'Faculty & Staff Housing',
+  'Balicha Campus Main Gate',
+  'Student Mess & Activity Center',
+  'Incubation Center (E-Cell / CIE)',
+  'Balicha / Nearby Udaipur'
+];
 
 function RentModal({ book, onClose }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [weeks, setWeeks] = useState(2);
+
+  const availableWeekOptions = (() => {
+    if (book.allowedRentalWeeks && book.allowedRentalWeeks.length > 0) {
+      return [...book.allowedRentalWeeks].filter(w => w > 0).sort((a, b) => a - b);
+    }
+    const min = book.minRentalWeeks || 1;
+    const max = book.maxRentalWeeks || 8;
+    if (max <= 12) {
+      const opts = [];
+      for (let i = min; i <= max; i++) {
+        opts.push(i);
+      }
+      return opts;
+    }
+    const presets = [1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 36, 52];
+    const filtered = presets.filter(w => w >= min && w <= max);
+    if (!filtered.includes(min)) filtered.unshift(min);
+    if (!filtered.includes(max)) filtered.push(max);
+    return Array.from(new Set(filtered)).sort((a, b) => a - b);
+  })();
+
+  const [weeks, setWeeks] = useState(() => {
+    if (availableWeekOptions.includes(2)) return 2;
+    return availableWeekOptions[0] || (book.minRentalWeeks || 1);
+  });
+
+  const [location, setLocation] = useState(() => {
+    const saved = localStorage.getItem('ndl_selected_location');
+    if (saved === 'IIM Udaipur') return 'IIM Udaipur';
+    if (book.availableLocations && book.availableLocations.length === 1) return book.availableLocations[0];
+    return 'Nagpur';
+  });
+
   const [deliveryType, setDeliveryType] = useState('pickup');
   const [area, setArea] = useState('');
   const [pincode, setPincode] = useState('');
@@ -35,7 +78,7 @@ function RentModal({ book, onClose }) {
     e.preventDefault();
     if (!user) { navigate('/login'); return; }
     if (deliveryType === 'delivery' && !area) {
-      toast.error('Please enter your area for delivery');
+      toast.error('Please enter your area / campus location for delivery');
       return;
     }
     setStep('payment');
@@ -72,6 +115,7 @@ function RentModal({ book, onClose }) {
       await api.post('/rentals', {
         bookId: book._id,
         weeksDuration: weeks,
+        location,
         deliveryType,
         deliveryAddress: { area, pincode },
         userNote: note,
@@ -87,6 +131,8 @@ function RentModal({ book, onClose }) {
       setStep('payment');
     }
   };
+
+  const areaList = location === 'IIM Udaipur' ? IIMU_AREAS : NAGPUR_AREAS;
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -107,11 +153,41 @@ function RentModal({ book, onClose }) {
 
         {step === 'checkout' && (
           <form onSubmit={handleProceedToPayment}>
+            {/* City / Location Selector */}
+            <div className="form-group" style={{ marginBottom: '18px' }}>
+              <label className="form-label">Rental City / Campus</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {['Nagpur', 'IIM Udaipur'].map(loc => {
+                  const isAvailableHere = !book.availableLocations || book.availableLocations.length === 0 || book.availableLocations.includes(loc);
+                  const isSelected = location === loc;
+                  return (
+                    <button
+                      key={loc}
+                      type="button"
+                      disabled={!isAvailableHere}
+                      className={`delivery-option ${isSelected ? 'delivery-option-active' : ''}`}
+                      onClick={() => { setLocation(loc); setArea(''); }}
+                      style={{ padding: '10px 12px', justifyContent: 'center', opacity: !isAvailableHere ? 0.5 : 1 }}
+                    >
+                      <FiMapPin size={15} style={{ color: isSelected ? 'var(--brown-rich)' : 'var(--copper)' }} />
+                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>{loc}</span>
+                      {!isAvailableHere && <span style={{ fontSize: '10px', color: 'var(--dusty-rose)' }}>(Unavailable)</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Duration */}
             <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label className="form-label">Duration (weeks)</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label className="form-label" style={{ marginBottom: 0 }}>Duration (weeks)</label>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Allowed: {book.allowedRentalWeeks && book.allowedRentalWeeks.length > 0 ? `${book.allowedRentalWeeks.join(', ')} wks` : `${book.minRentalWeeks || 1}–${book.maxRentalWeeks || 8} wks`}
+                </span>
+              </div>
               <div className="weeks-selector">
-                {[1, 2, 3, 4, 6, 8].map(w => (
+                {availableWeekOptions.map(w => (
                   <button
                     key={w}
                     type="button"
@@ -148,7 +224,9 @@ function RentModal({ book, onClose }) {
                   <FiMapPin size={18} />
                   <div>
                     <div className="delivery-option-title">Self Pickup</div>
-                    <div className="delivery-option-desc">Coordinate via email (admin@nextdoorlibrary.in)</div>
+                    <div className="delivery-option-desc">
+                      {location === 'IIM Udaipur' ? 'Balicha Campus library hub point' : 'Coordinate via admin@nextdoorlibrary.in'}
+                    </div>
                   </div>
                 </button>
                 <button
@@ -158,8 +236,10 @@ function RentModal({ book, onClose }) {
                 >
                   <FiTruck size={18} />
                   <div>
-                    <div className="delivery-option-title">Home Delivery</div>
-                    <div className="delivery-option-desc">Within Nagpur city</div>
+                    <div className="delivery-option-title">Doorstep Delivery</div>
+                    <div className="delivery-option-desc">
+                      {location === 'IIM Udaipur' ? 'Hostel / Faculty / Balicha delivery' : 'Within Nagpur city'}
+                    </div>
                   </div>
                 </button>
               </div>
@@ -176,15 +256,21 @@ function RentModal({ book, onClose }) {
                 >
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div className="form-group">
-                      <label className="form-label">Area / Locality</label>
+                      <label className="form-label">{location === 'IIM Udaipur' ? 'Campus Block / Area' : 'Area / Locality'}</label>
                       <select className="form-input form-select" value={area} onChange={e => setArea(e.target.value)} required>
-                        <option value="">Select area</option>
-                        {NAGPUR_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+                        <option value="">{location === 'IIM Udaipur' ? 'Select campus area' : 'Select area'}</option>
+                        {areaList.map(a => <option key={a} value={a}>{a}</option>)}
                       </select>
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Pincode</label>
-                      <input className="form-input" placeholder="e.g. 440010" value={pincode} onChange={e => setPincode(e.target.value)} maxLength={6} />
+                      <label className="form-label">{location === 'IIM Udaipur' ? 'Room / Hostel No.' : 'Pincode'}</label>
+                      <input
+                        className="form-input"
+                        placeholder={location === 'IIM Udaipur' ? 'e.g. H2-304' : 'e.g. 440010'}
+                        value={pincode}
+                        onChange={e => setPincode(e.target.value)}
+                        maxLength={location === 'IIM Udaipur' ? 20 : 6}
+                      />
                     </div>
                   </div>
                 </motion.div>
@@ -583,6 +669,11 @@ export default function BookDetail() {
               {book.language !== 'English' && (
                 <span className="badge" style={{ background: 'rgba(122,143,110,0.1)', color: 'var(--sage)', border: '1px solid rgba(122,143,110,0.3)' }}>
                   {book.language}
+                </span>
+              )}
+              {book.availableLocations && book.availableLocations.length > 0 && (
+                <span className="badge" style={{ background: 'rgba(201, 168, 76, 0.15)', color: 'var(--brown-rich)', border: '1px solid rgba(201, 168, 76, 0.4)' }}>
+                  📍 {book.availableLocations.join(' & ')}
                 </span>
               )}
             </div>

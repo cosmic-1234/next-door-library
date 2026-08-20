@@ -60,6 +60,28 @@ const bookSchema = new mongoose.Schema({
     min: [10, 'Minimum price is ₹10'],
     max: [100, 'Maximum price is ₹100']
   },
+  minRentalWeeks: {
+    type: Number,
+    default: 1,
+    min: [1, 'Minimum rental duration is 1 week'],
+    max: [52, 'Maximum rental duration cannot exceed 52 weeks']
+  },
+  maxRentalWeeks: {
+    type: Number,
+    default: 8,
+    min: [1, 'Minimum rental duration is 1 week'],
+    max: [52, 'Maximum rental duration cannot exceed 52 weeks']
+  },
+  allowedRentalWeeks: [{
+    type: Number,
+    min: 1,
+    max: 52
+  }],
+  availableLocations: {
+    type: [String],
+    enum: ['Nagpur', 'IIM Udaipur'],
+    default: ['Nagpur', 'IIM Udaipur']
+  },
   totalCopies: {
     type: Number,
     default: 1,

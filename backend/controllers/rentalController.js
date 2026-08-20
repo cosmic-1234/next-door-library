@@ -6,7 +6,7 @@ const User = require('../models/User');
 // @route   POST /api/rentals
 const requestRental = async (req, res) => {
   try {
-    const { bookId, weeksDuration, deliveryType, deliveryAddress, userNote, paymentStatus, paymentMethod, paymentId } = req.body;
+    const { bookId, weeksDuration, location, deliveryType, deliveryAddress, userNote, paymentStatus, paymentMethod, paymentId } = req.body;
 
     const book = await Book.findById(bookId);
     if (!book) {
@@ -26,13 +26,37 @@ const requestRental = async (req, res) => {
       return res.status(400).json({ success: false, message: 'You already have an active rental for this book' });
     }
 
-    const totalCost = book.pricePerWeek * weeksDuration;
+    const duration = Number(weeksDuration);
+    if (!duration || duration < 1) {
+      return res.status(400).json({ success: false, message: 'Invalid rental duration' });
+    }
+
+    if (book.allowedRentalWeeks && book.allowedRentalWeeks.length > 0) {
+      if (!book.allowedRentalWeeks.includes(duration)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid duration. Allowed rental durations for this book are: ${book.allowedRentalWeeks.join(', ')} weeks`
+        });
+      }
+    } else {
+      const minW = book.minRentalWeeks || 1;
+      const maxW = book.maxRentalWeeks || 8;
+      if (duration < minW || duration > maxW) {
+        return res.status(400).json({
+          success: false,
+          message: `Rental duration must be between ${minW} and ${maxW} week${maxW > 1 ? 's' : ''}`
+        });
+      }
+    }
+
+    const totalCost = book.pricePerWeek * duration;
 
     const rental = await Rental.create({
       user: req.user._id,
       book: bookId,
-      weeksDuration,
+      weeksDuration: duration,
       totalCost,
+      location: location || 'Nagpur',
       deliveryType: deliveryType || 'pickup',
       deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : {},
       userNote: userNote || '',

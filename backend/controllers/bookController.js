@@ -6,7 +6,7 @@ const Review = require('../models/Review');
 const getBooks = async (req, res) => {
   try {
     const {
-      search, genre, language, condition, available,
+      search, genre, language, condition, available, location,
       minPrice, maxPrice, sort, page = 1, limit = 12
     } = req.query;
 
@@ -18,6 +18,9 @@ const getBooks = async (req, res) => {
     if (genre) query.genre = genre;
     if (language) query.language = language;
     if (condition) query.condition = condition;
+    if (location && location !== 'All') {
+      query.availableLocations = location;
+    }
     if (available === 'true') query.availableCopies = { $gt: 0 };
     if (minPrice || maxPrice) {
       query.pricePerWeek = {};

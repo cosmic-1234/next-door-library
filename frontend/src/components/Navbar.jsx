@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { FiMenu, FiX, FiBook, FiUser, FiLogOut, FiSettings, FiShield } from 'react-icons/fi';
+import { FiMenu, FiX, FiBook, FiUser, FiLogOut, FiSettings, FiShield, FiMapPin, FiChevronDown, FiAward } from 'react-icons/fi';
 
 const navLinks = [
   { to: '/books', label: 'Catalogue' },
@@ -12,13 +12,18 @@ const navLinks = [
   { to: '/feed', label: "Friends' Shelf", protected: true },
 ];
 
+const LOCATIONS = ['All Locations', 'Nagpur', 'IIM Udaipur'];
+
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [locDropdownOpen, setLocDropdownOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(() => localStorage.getItem('ndl_selected_location') || 'All Locations');
   const dropdownRef = useRef(null);
+  const locRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -27,9 +32,20 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    const handleLocUpdate = (e) => {
+      if (e.detail) setSelectedLocation(e.detail);
+    };
+    window.addEventListener('ndl_location_change', handleLocUpdate);
+    return () => window.removeEventListener('ndl_location_change', handleLocUpdate);
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
+      }
+      if (locRef.current && !locRef.current.contains(e.target)) {
+        setLocDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -40,6 +56,16 @@ export default function Navbar() {
     logout();
     navigate('/');
     setDropdownOpen(false);
+  };
+
+  const handleLocationChange = (loc) => {
+    setSelectedLocation(loc);
+    localStorage.setItem('ndl_selected_location', loc);
+    setLocDropdownOpen(false);
+    window.dispatchEvent(new CustomEvent('ndl_location_change', { detail: loc }));
+    if (window.location.pathname === '/books') {
+      navigate(loc === 'All Locations' ? '/books' : `/books?location=${encodeURIComponent(loc)}`);
+    }
   };
 
   const getInitials = (name) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -81,6 +107,55 @@ export default function Navbar() {
 
           {/* Right Side */}
           <div className="navbar-actions">
+            {/* IIM Udaipur Announcement Mini Pill */}
+            <button
+              className="navbar-iimu-pill"
+              onClick={() => window.dispatchEvent(new CustomEvent('open_iimu_popup'))}
+              title="Click to view IIM Udaipur campus lending details"
+            >
+              <span className="iimu-dot">✦</span>
+              <span>IIM Udaipur</span>
+            </button>
+
+            {/* Location Selector Pill */}
+            <div className="navbar-location-wrap" ref={locRef}>
+              <button
+                className="navbar-location-btn"
+                onClick={() => setLocDropdownOpen(!locDropdownOpen)}
+                title="Select City / Campus"
+              >
+                <FiMapPin size={14} style={{ color: 'var(--copper)' }} />
+                <span>{selectedLocation}</span>
+                <FiChevronDown size={13} style={{ transform: locDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'var(--text-muted)' }} />
+              </button>
+
+              <AnimatePresence>
+                {locDropdownOpen && (
+                  <motion.div
+                    className="navbar-loc-dropdown"
+                    initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <div style={{ padding: '8px 12px', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Choose Location
+                    </div>
+                    {LOCATIONS.map(loc => (
+                      <button
+                        key={loc}
+                        className={`navbar-loc-item ${selectedLocation === loc ? 'active' : ''}`}
+                        onClick={() => handleLocationChange(loc)}
+                      >
+                        <FiMapPin size={13} />
+                        <span>{loc}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {user ? (
               <div className="navbar-user" ref={dropdownRef}>
                 <button
@@ -394,6 +469,99 @@ export default function Navbar() {
         .navbar-dropdown-item:hover {
           background: rgba(196, 144, 106, 0.1);
           color: var(--text-primary);
+        }
+
+        .navbar-iimu-pill {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          height: 34px;
+          padding: 0 12px;
+          border-radius: var(--radius-full);
+          background: rgba(122, 143, 110, 0.12);
+          border: 1px solid rgba(122, 143, 110, 0.28);
+          color: var(--brown-rich);
+          font-family: var(--font-sans);
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+        .navbar-iimu-pill:hover {
+          background: rgba(122, 143, 110, 0.22);
+          border-color: var(--sage);
+          transform: translateY(-1px);
+        }
+        .iimu-dot {
+          font-size: 10px;
+          color: var(--sage);
+          line-height: 1;
+        }
+
+        .navbar-location-wrap {
+          position: relative;
+        }
+        .navbar-location-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          height: 34px;
+          padding: 0 12px;
+          border-radius: var(--radius-full);
+          background: rgba(196, 144, 106, 0.1);
+          border: 1px solid rgba(196, 144, 106, 0.22);
+          color: var(--brown-rich);
+          font-family: var(--font-sans);
+          font-size: 12.5px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+        .navbar-location-btn:hover {
+          background: rgba(196, 144, 106, 0.18);
+          border-color: var(--copper);
+          transform: translateY(-1px);
+        }
+        .navbar-loc-dropdown {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          min-width: 170px;
+          background: var(--bg-card);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(196, 144, 106, 0.25);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-xl);
+          padding: 4px;
+          z-index: var(--z-dropdown);
+        }
+        .navbar-loc-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          padding: 8px 12px;
+          border-radius: var(--radius-sm);
+          font-size: var(--text-xs);
+          font-weight: 500;
+          color: var(--text-secondary);
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.15s ease;
+        }
+        .navbar-loc-item:hover {
+          background: rgba(196, 144, 106, 0.12);
+          color: var(--brown-deep);
+        }
+        .navbar-loc-item.active {
+          background: var(--brown-rich);
+          color: var(--cream);
+          font-weight: 600;
+        }
+        .navbar-loc-item.active svg {
+          color: var(--gold);
         }
 
         .navbar-dropdown-admin { color: var(--copper); }

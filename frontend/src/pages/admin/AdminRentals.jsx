@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiCheck, FiX, FiClock, FiPackage, FiRefreshCw, FiPhone, FiMail, FiMapPin } from 'react-icons/fi';
+import { FiCheck, FiX, FiClock, FiPackage, FiRefreshCw, FiPhone, FiMail, FiMapPin, FiEdit2, FiCalendar } from 'react-icons/fi';
 import api from '../../api/axios';
 
 const STATUS_OPTIONS = ['pending', 'approved', 'active', 'returned', 'overdue', 'cancelled'];
@@ -15,24 +15,152 @@ const STATUS_CONFIG = {
   cancelled: { label: 'Cancelled', color: 'var(--text-muted)', bg: 'rgba(155,123,106,0.08)' },
 };
 
+function EditRentalModal({ rental, onClose, onSave }) {
+  const [weeksDuration, setWeeksDuration] = useState(rental.weeksDuration || 1);
+  const [location, setLocation] = useState(rental.location || 'Nagpur');
+  const [status, setStatus] = useState(rental.status);
+  const [adminNote, setAdminNote] = useState(rental.adminNote || '');
+  const [dueDate, setDueDate] = useState(rental.dueDate ? new Date(rental.dueDate).toISOString().split('T')[0] : '');
+  const [loading, setLoading] = useState(false);
+
+  const pricePerWeek = rental.book?.pricePerWeek || 0;
+  const recalculatedCost = pricePerWeek * weeksDuration;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const payload = {
+        weeksDuration: Number(weeksDuration),
+        location,
+        status,
+        adminNote,
+        ...(dueDate && { dueDate: new Date(dueDate).toISOString() })
+      };
+      const res = await api.patch(`/admin/rentals/${rental._id}`, payload);
+      onSave(res.data.rental);
+      toast.success('Rental updated successfully!');
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update rental');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <motion.div
+        className="modal-content"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        style={{ maxWidth: '500px' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-xl)', fontWeight: 600 }}>
+            Customize Rental
+          </h2>
+          <button className="modal-close" onClick={onClose}><FiX /></button>
+        </div>
+
+        <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--cream-light)', borderRadius: '8px', border: '1px solid rgba(196,144,106,0.2)' }}>
+          <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{rental.book?.title}</p>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Reader: {rental.user?.name} ({rental.user?.email})</p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-group">
+              <label className="form-label">Rental Location</label>
+              <select className="form-input form-select" value={location} onChange={e => setLocation(e.target.value)}>
+                <option value="Nagpur">Nagpur</option>
+                <option value="IIM Udaipur">IIM Udaipur</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Rental Duration (weeks) *</label>
+              <input
+                type="number"
+                className="form-input"
+                value={weeksDuration}
+                onChange={e => setWeeksDuration(Number(e.target.value))}
+                min="1"
+                max="52"
+                required
+              />
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Total Cost: ₹{recalculatedCost} (₹{pricePerWeek}/wk × {weeksDuration} weeks)
+              </p>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select className="form-input form-select" value={status} onChange={e => setStatus(e.target.value)}>
+                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Due Date (optional override)</label>
+              <input
+                type="date"
+                className="form-input"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Admin Note</label>
+              <textarea
+                className="form-input form-textarea"
+                value={adminNote}
+                onChange={e => setAdminNote(e.target.value)}
+                placeholder="Internal notes or communication notes..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(196,144,106,0.15)' }}>
+            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Saving...' : 'Update Rental'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function AdminRentals() {
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [updatingId, setUpdatingId] = useState(null);
+  const [editRental, setEditRental] = useState(null);
 
   const fetchRentals = async (page = 1) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page, limit: 20, ...(statusFilter && { status: statusFilter }) });
+      const params = new URLSearchParams({
+        page,
+        limit: 20,
+        ...(statusFilter && { status: statusFilter }),
+        ...(locationFilter && { location: locationFilter })
+      });
       const res = await api.get(`/admin/rentals?${params}`);
       setRentals(res.data.rentals || []);
       setPagination(res.data.pagination || { page: 1, pages: 1, total: 0 });
     } catch { } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchRentals(1); }, [statusFilter]);
+  useEffect(() => { fetchRentals(1); }, [statusFilter, locationFilter]);
 
   const updateStatus = async (rentalId, status, adminNote = '') => {
     setUpdatingId(rentalId);
@@ -66,35 +194,59 @@ export default function AdminRentals() {
         <p className="admin-page-sub">{pagination.total} total rentals</p>
       </div>
 
-      {/* Status Filters */}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
-        <button className={`forum-cat-btn ${!statusFilter ? 'active' : ''}`} onClick={() => setStatusFilter('')} style={{ color: !statusFilter ? 'white' : 'var(--text-secondary)', background: !statusFilter ? 'var(--brown-rich)' : undefined, border: '1px solid rgba(196,144,106,0.2)' }}>
-          All
-        </button>
-        {STATUS_OPTIONS.map(s => {
-          const c = STATUS_CONFIG[s];
-          const isActive = statusFilter === s;
-          return (
+      {/* Location Filter & Status Filters */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+        {/* City Location Filters */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)' }}>Location:</span>
+          {['', 'Nagpur', 'IIM Udaipur'].map(loc => (
             <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
+              key={loc}
+              className={`forum-cat-btn ${locationFilter === loc ? 'active' : ''}`}
+              onClick={() => setLocationFilter(loc)}
               style={{
-                padding: '6px 14px',
-                borderRadius: 'var(--radius-full)',
-                fontSize: 'var(--text-xs)',
-                fontWeight: 500,
-                cursor: 'pointer',
-                border: `1px solid ${c.color}40`,
-                color: isActive ? 'white' : c.color,
-                background: isActive ? c.color : c.bg,
-                textTransform: 'capitalize',
-                transition: 'all 0.2s'
+                color: locationFilter === loc ? 'white' : 'var(--text-secondary)',
+                background: locationFilter === loc ? 'var(--brown-rich)' : 'rgba(255, 255, 255, 0.6)',
+                border: '1px solid rgba(196,144,106,0.3)',
+                padding: '4px 12px',
+                fontSize: '11px'
               }}
             >
-              {c.label}
+              {loc ? loc : 'All Cities'}
             </button>
-          );
-        })}
+          ))}
+        </div>
+
+        {/* Status Filters */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button className={`forum-cat-btn ${!statusFilter ? 'active' : ''}`} onClick={() => setStatusFilter('')} style={{ color: !statusFilter ? 'white' : 'var(--text-secondary)', background: !statusFilter ? 'var(--copper)' : undefined, border: '1px solid rgba(196,144,106,0.2)' }}>
+            All Statuses
+          </button>
+          {STATUS_OPTIONS.map(s => {
+            const c = STATUS_CONFIG[s];
+            const isActive = statusFilter === s;
+            return (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  border: `1px solid ${c.color}40`,
+                  color: isActive ? 'white' : c.color,
+                  background: isActive ? c.color : c.bg,
+                  textTransform: 'capitalize',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="admin-chart-card">
@@ -104,6 +256,7 @@ export default function AdminRentals() {
               <tr>
                 <th>Reader</th>
                 <th>Book</th>
+                <th>Location</th>
                 <th>Duration</th>
                 <th>Cost</th>
                 <th>Delivery</th>
@@ -115,9 +268,9 @@ export default function AdminRentals() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: '40px' }}><div className="spinner" style={{ margin: '0 auto' }} /></td></tr>
+                <tr><td colSpan={10} style={{ textAlign: 'center', padding: '40px' }}><div className="spinner" style={{ margin: '0 auto' }} /></td></tr>
               ) : rentals.length === 0 ? (
-                <tr><td colSpan={9} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>No rentals found</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>No rentals found</td></tr>
               ) : rentals.map((rental, i) => {
                 const config = STATUS_CONFIG[rental.status];
                 const actions = quickActions(rental);
@@ -138,7 +291,32 @@ export default function AdminRentals() {
                       <p style={{ fontWeight: 600 }}>{rental.book?.title}</p>
                       <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>by {rental.book?.author}</p>
                     </td>
-                    <td>{rental.weeksDuration} week{rental.weeksDuration > 1 ? 's' : ''}</td>
+                    <td>
+                      <span
+                        className="badge"
+                        style={{
+                          fontSize: '11px',
+                          background: rental.location === 'IIM Udaipur' ? 'rgba(201, 168, 76, 0.15)' : 'rgba(196, 144, 106, 0.15)',
+                          color: rental.location === 'IIM Udaipur' ? 'var(--brown-deep)' : 'var(--brown-rich)',
+                          border: rental.location === 'IIM Udaipur' ? '1px solid rgba(201, 168, 76, 0.4)' : '1px solid rgba(196, 144, 106, 0.3)'
+                        }}
+                      >
+                        📍 {rental.location || 'Nagpur'}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>{rental.weeksDuration} week{rental.weeksDuration > 1 ? 's' : ''}</span>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ padding: '2px 4px', height: 'auto', minHeight: 'auto', color: 'var(--copper)' }}
+                          onClick={() => setEditRental(rental)}
+                          title="Customize rental duration"
+                        >
+                          <FiEdit2 size={11} />
+                        </button>
+                      </div>
+                    </td>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--brown-rich)' }}>₹{rental.totalCost}</div>
                       <div style={{ fontSize: '10px', color: rental.paymentStatus === 'paid' ? 'var(--sage)' : 'var(--gold)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>
@@ -182,6 +360,14 @@ export default function AdminRentals() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                        <button
+                          className="btn btn-sm"
+                          style={{ color: 'var(--copper)', border: '1px solid rgba(196,144,106,0.3)', padding: '4px 8px', fontSize: '11px' }}
+                          onClick={() => setEditRental(rental)}
+                          title="Edit Rental & Duration"
+                        >
+                          <FiEdit2 size={12} />
+                        </button>
                         {actions.map((action, ai) => (
                           <button
                             key={ai}
@@ -211,6 +397,18 @@ export default function AdminRentals() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {editRental && (
+          <EditRentalModal
+            rental={editRental}
+            onClose={() => setEditRental(null)}
+            onSave={(updated) => {
+              setRentals(prev => prev.map(r => r._id === updated._id ? updated : r));
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <style>{`
         .admin-page-title { font-family: var(--font-serif); font-size: var(--text-3xl); font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }

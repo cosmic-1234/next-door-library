@@ -90,6 +90,21 @@ const createBook = async (req, res) => {
     if (req.file) {
       bookData.cover = `/uploads/${req.file.filename}`;
     }
+    if (typeof bookData.allowedRentalWeeks === 'string') {
+      bookData.allowedRentalWeeks = bookData.allowedRentalWeeks
+        .split(',')
+        .map(w => parseInt(w.trim(), 10))
+        .filter(w => !isNaN(w) && w > 0);
+    }
+    if (typeof bookData.availableLocations === 'string') {
+      bookData.availableLocations = bookData.availableLocations
+        .split(',')
+        .map(l => l.trim())
+        .filter(Boolean);
+    }
+    if (typeof bookData.tags === 'string') {
+      bookData.tags = bookData.tags.split(',').map(t => t.trim()).filter(Boolean);
+    }
     bookData.availableCopies = bookData.totalCopies || 1;
 
     const book = await Book.create(bookData);
@@ -107,6 +122,21 @@ const updateBook = async (req, res) => {
     const updateData = { ...req.body };
     if (req.file) {
       updateData.cover = `/uploads/${req.file.filename}`;
+    }
+    if (typeof updateData.allowedRentalWeeks === 'string') {
+      updateData.allowedRentalWeeks = updateData.allowedRentalWeeks
+        .split(',')
+        .map(w => parseInt(w.trim(), 10))
+        .filter(w => !isNaN(w) && w > 0);
+    }
+    if (typeof updateData.availableLocations === 'string') {
+      updateData.availableLocations = updateData.availableLocations
+        .split(',')
+        .map(l => l.trim())
+        .filter(Boolean);
+    }
+    if (typeof updateData.tags === 'string') {
+      updateData.tags = updateData.tags.split(',').map(t => t.trim()).filter(Boolean);
     }
 
     const book = await Book.findByIdAndUpdate(req.params.id, { $set: updateData }, { new: true, runValidators: true });
@@ -135,15 +165,16 @@ const deleteBook = async (req, res) => {
 // @route   GET /api/admin/rentals
 const getAllRentals = async (req, res) => {
   try {
-    const { status, page = 1, limit = 20 } = req.query;
+    const { status, location, page = 1, limit = 20 } = req.query;
     const query = {};
     if (status) query.status = status;
+    if (location && location !== 'All') query.location = location;
 
     const skip = (Number(page) - 1) * Number(limit);
     const total = await Rental.countDocuments(query);
     const rentals = await Rental.find(query)
       .populate('user', 'name email phone')
-      .populate('book', 'title author cover pricePerWeek')
+      .populate('book', 'title author cover pricePerWeek minRentalWeeks maxRentalWeeks allowedRentalWeeks availableLocations')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -158,47 +189,63 @@ const getAllRentals = async (req, res) => {
 // @route   PATCH /api/admin/rentals/:id
 const updateRentalStatus = async (req, res) => {
   try {
-    const { status, adminNote } = req.body;
-    const rental = await Rental.findById(req.params.id);
+    const { status, adminNote, weeksDuration, dueDate, location } = req.body;
+    const rental = await Rental.findById(req.params.id).populate('book', 'pricePerWeek');
 
     if (!rental) return res.status(404).json({ success: false, message: 'Rental not found' });
 
     const oldStatus = rental.status;
-    rental.status = status;
-    if (adminNote) rental.adminNote = adminNote;
+    if (status) rental.status = status;
+    if (adminNote !== undefined) rental.adminNote = adminNote;
+    if (location) rental.location = location;
+
+    if (weeksDuration && Number(weeksDuration) > 0) {
+      rental.weeksDuration = Number(weeksDuration);
+      if (rental.book?.pricePerWeek) {
+        rental.totalCost = rental.book.pricePerWeek * rental.weeksDuration;
+      }
+    }
 
     // When approving → set dates and reduce availability
     if (status === 'active' && oldStatus !== 'active') {
       rental.rentedAt = new Date();
-      rental.dueDate = new Date(Date.now() + rental.weeksDuration * 7 * 24 * 60 * 60 * 1000);
-      await Book.findByIdAndUpdate(rental.book, { $inc: { availableCopies: -1, totalRentals: 1 } });
+      rental.dueDate = dueDate ? new Date(dueDate) : new Date(Date.now() + rental.weeksDuration * 7 * 24 * 60 * 60 * 1000);
+      await Book.findByIdAndUpdate(rental.book._id || rental.book, { $inc: { availableCopies: -1, totalRentals: 1 } });
 
       // Set currentlyReading for user
-      await User.findByIdAndUpdate(rental.user, { currentlyReading: rental.book });
+      await User.findByIdAndUpdate(rental.user, { currentlyReading: rental.book._id || rental.book });
+    } else if (status === 'active' && weeksDuration) {
+      // If already active and weeksDuration changed
+      if (dueDate) {
+        rental.dueDate = new Date(dueDate);
+      } else if (rental.rentedAt) {
+        rental.dueDate = new Date(rental.rentedAt.getTime() + rental.weeksDuration * 7 * 24 * 60 * 60 * 1000);
+      }
     }
 
     // When returned → restore availability
     if (status === 'returned' && oldStatus === 'active') {
       rental.returnedAt = new Date();
-      await Book.findByIdAndUpdate(rental.book, { $inc: { availableCopies: 1 } });
+      await Book.findByIdAndUpdate(rental.book._id || rental.book, { $inc: { availableCopies: 1 } });
       await User.findByIdAndUpdate(rental.user, {
         currentlyReading: null,
-        $addToSet: { readingHistory: rental.book },
+        $addToSet: { readingHistory: rental.book._id || rental.book },
         $inc: { totalBooksRead: 1 }
       });
     }
 
     // When cancelled → restore if was active
     if (status === 'cancelled' && oldStatus === 'active') {
-      await Book.findByIdAndUpdate(rental.book, { $inc: { availableCopies: 1 } });
+      await Book.findByIdAndUpdate(rental.book._id || rental.book, { $inc: { availableCopies: 1 } });
     }
 
     await rental.save();
     await rental.populate('user', 'name email phone');
-    await rental.populate('book', 'title author cover');
+    await rental.populate('book', 'title author cover pricePerWeek minRentalWeeks maxRentalWeeks allowedRentalWeeks');
 
     res.json({ success: true, rental });
   } catch (error) {
+    console.error('Update rental status error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

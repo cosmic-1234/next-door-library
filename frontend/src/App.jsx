@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LoadingScreen from './components/LoadingScreen';
+import IIMUdaipurPopup from './components/IIMUdaipurPopup';
 
 // Pages
 import Home from './pages/Home';
@@ -47,10 +49,46 @@ const PublicRoute = ({ children }) => {
 
 export default function App() {
   const { loading } = useAuth();
+  const [showIIMUPopup, setShowIIMUPopup] = useState(false);
+
+  useEffect(() => {
+    // Show popup after a brief delay if not dismissed in current session
+    const hasSeen = sessionStorage.getItem('ndl_iimu_popup_dismissed');
+    if (!hasSeen) {
+      const timer = setTimeout(() => {
+        setShowIIMUPopup(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleOpenPopup = () => setShowIIMUPopup(true);
+    window.addEventListener('open_iimu_popup', handleOpenPopup);
+    return () => window.removeEventListener('open_iimu_popup', handleOpenPopup);
+  }, []);
+
+  const handleCloseIIMUPopup = () => {
+    setShowIIMUPopup(false);
+    sessionStorage.setItem('ndl_iimu_popup_dismissed', 'true');
+  };
+
+  const handleSelectLocation = (location) => {
+    localStorage.setItem('ndl_selected_location', location);
+    window.dispatchEvent(new CustomEvent('ndl_location_change', { detail: location }));
+    handleCloseIIMUPopup();
+  };
+
   if (loading) return <LoadingScreen />;
 
   return (
     <>
+      <IIMUdaipurPopup
+        isOpen={showIIMUPopup}
+        onClose={handleCloseIIMUPopup}
+        onSelectLocation={handleSelectLocation}
+      />
+
       <Routes>
         {/* Public pages with Navbar */}
         <Route path="/" element={<><Navbar /><Home /><Footer /></>} />

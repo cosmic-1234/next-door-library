@@ -5,21 +5,53 @@ import { FiPlus, FiEdit2, FiTrash2, FiX, FiStar, FiSearch } from 'react-icons/fi
 import api from '../../api/axios';
 
 const GENRES = ['Fiction', 'Non-Fiction', 'Mystery', 'Romance', 'Fantasy', 'Science Fiction', 'Biography', 'Self-Help', 'History', 'Children', 'Young Adult', 'Thriller', 'Literary Fiction', 'Philosophy', 'Psychology', 'Business', 'Poetry', 'Other'];
-const EMPTY_BOOK = { title: '', author: '', description: '', genre: 'Fiction', language: 'English', condition: 'Good', pricePerWeek: 20, totalCopies: 1, publishedYear: '', publisher: '', pages: '', isbn: '', tags: '', featured: false };
+const ALL_LOCATIONS = ['Nagpur', 'IIM Udaipur'];
+const EMPTY_BOOK = {
+  title: '', author: '', description: '', genre: 'Fiction', language: 'English',
+  condition: 'Good', pricePerWeek: 20, totalCopies: 1,
+  minRentalWeeks: 1, maxRentalWeeks: 8, allowedRentalWeeks: '',
+  availableLocations: ['Nagpur', 'IIM Udaipur'],
+  publishedYear: '', publisher: '', pages: '', isbn: '', tags: '', featured: false
+};
 
 function BookFormModal({ book, onClose, onSave }) {
   const isEdit = !!book?._id;
-  const [form, setForm] = useState(book || EMPTY_BOOK);
+  const [form, setForm] = useState(() => {
+    if (book) {
+      return {
+        ...book,
+        minRentalWeeks: book.minRentalWeeks ?? 1,
+        maxRentalWeeks: book.maxRentalWeeks ?? 8,
+        allowedRentalWeeks: Array.isArray(book.allowedRentalWeeks) ? book.allowedRentalWeeks.join(', ') : (book.allowedRentalWeeks || ''),
+        availableLocations: Array.isArray(book.availableLocations) && book.availableLocations.length > 0 ? book.availableLocations : ['Nagpur', 'IIM Udaipur']
+      };
+    }
+    return EMPTY_BOOK;
+  });
   const [coverFile, setCoverFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const toggleLocation = (loc) => {
+    setForm(p => {
+      const current = p.availableLocations || [];
+      const updated = current.includes(loc) ? current.filter(l => l !== loc) : [...current, loc];
+      return { ...p, availableLocations: updated };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.availableLocations || form.availableLocations.length === 0) {
+      toast.error('Please select at least one available location for this book');
+      return;
+    }
     setLoading(true);
     try {
       const formData = new FormData();
       Object.entries(form).forEach(([k, v]) => {
         if (k === 'tags') formData.append(k, typeof v === 'string' ? v : v.join(','));
+        else if (k === 'allowedRentalWeeks') formData.append(k, typeof v === 'string' ? v : v.join(','));
+        else if (k === 'availableLocations') formData.append(k, Array.isArray(v) ? v.join(',') : v);
         else if (v !== '' && v !== null && v !== undefined) formData.append(k, v);
       });
       if (coverFile) formData.append('cover', coverFile);
@@ -87,6 +119,44 @@ function BookFormModal({ book, onClose, onSave }) {
             <div className="form-group">
               <label className="form-label">Total Copies</label>
               <input type="number" className="form-input" value={form.totalCopies} onChange={e => setForm(p => ({ ...p, totalCopies: Number(e.target.value) }))} min="1" />
+            </div>
+
+            {/* Rental Duration Settings */}
+            <div className="form-group">
+              <label className="form-label">Min Rental Duration (weeks) *</label>
+              <input type="number" className="form-input" value={form.minRentalWeeks} onChange={e => setForm(p => ({ ...p, minRentalWeeks: Number(e.target.value) }))} required min="1" max="52" />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Max Rental Duration (weeks) *</label>
+              <input type="number" className="form-input" value={form.maxRentalWeeks} onChange={e => setForm(p => ({ ...p, maxRentalWeeks: Number(e.target.value) }))} required min="1" max="52" />
+            </div>
+
+            {/* Available Locations */}
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <label className="form-label">Available Rental Locations *</label>
+              <div style={{ display: 'flex', gap: '16px', marginTop: '6px' }}>
+                {ALL_LOCATIONS.map(loc => {
+                  const isChecked = form.availableLocations?.includes(loc);
+                  return (
+                    <label key={loc} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: 'var(--text-sm)' }}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleLocation(loc)}
+                      />
+                      <span>{loc}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Select which cities / campuses can rent this book.</p>
+            </div>
+
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <label className="form-label">Specific Allowed Rental Weeks (optional, comma-separated)</label>
+              <input className="form-input" value={form.allowedRentalWeeks} onChange={e => setForm(p => ({ ...p, allowedRentalWeeks: e.target.value }))} placeholder="e.g. 1, 2, 4, 8 (leave empty to use Min–Max range)" />
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Leave empty to allow standard range options between Min & Max weeks.</p>
             </div>
 
             <div className="form-group">
@@ -217,10 +287,12 @@ export default function AdminBooks() {
         </button>
       </div>
 
-      {/* Search */}
-      <div style={{ position: 'relative', maxWidth: '400px', marginBottom: '24px' }}>
-        <FiSearch size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-        <input className="form-input" style={{ paddingLeft: '40px' }} placeholder="Search books..." value={search} onChange={e => setSearch(e.target.value)} />
+      {/* Search & Location Filter */}
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ position: 'relative', maxWidth: '360px', flex: 1 }}>
+          <FiSearch size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input className="form-input" style={{ paddingLeft: '40px' }} placeholder="Search books..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
       </div>
 
       {/* Table */}
@@ -232,7 +304,9 @@ export default function AdminBooks() {
                 <th>Cover</th>
                 <th>Title & Author</th>
                 <th>Genre</th>
+                <th>Location</th>
                 <th>Price</th>
+                <th>Duration</th>
                 <th>Copies</th>
                 <th>Condition</th>
                 <th>Rating</th>
@@ -243,9 +317,9 @@ export default function AdminBooks() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} style={{ textAlign: 'center', padding: '40px' }}><div className="spinner" style={{ margin: '0 auto' }} /></td></tr>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: '40px' }}><div className="spinner" style={{ margin: '0 auto' }} /></td></tr>
               ) : books.length === 0 ? (
-                <tr><td colSpan={10} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>No books found</td></tr>
+                <tr><td colSpan={12} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>No books found</td></tr>
               ) : books.map((book, i) => (
                 <motion.tr key={book._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
                   <td>
@@ -258,7 +332,35 @@ export default function AdminBooks() {
                     <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>by {book.author}</p>
                   </td>
                   <td><span className="badge badge-genre">{book.genre}</span></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {book.availableLocations && book.availableLocations.length > 0 ? (
+                        book.availableLocations.map(loc => (
+                          <span
+                            key={loc}
+                            className="badge"
+                            style={{
+                              fontSize: '10px',
+                              padding: '2px 6px',
+                              background: loc === 'IIM Udaipur' ? 'rgba(201, 168, 76, 0.15)' : 'rgba(196, 144, 106, 0.15)',
+                              color: loc === 'IIM Udaipur' ? 'var(--brown-deep)' : 'var(--brown-rich)',
+                              border: loc === 'IIM Udaipur' ? '1px solid rgba(201, 168, 76, 0.4)' : '1px solid rgba(196, 144, 106, 0.3)'
+                            }}
+                          >
+                            {loc === 'IIM Udaipur' ? 'IIMU' : 'Nagpur'}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="badge" style={{ fontSize: '10px' }}>All</span>
+                      )}
+                    </div>
+                  </td>
                   <td style={{ fontWeight: 600, color: 'var(--brown-rich)' }}>₹{book.pricePerWeek}/wk</td>
+                  <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {book.allowedRentalWeeks && book.allowedRentalWeeks.length > 0
+                      ? `${book.allowedRentalWeeks.join(', ')} wks`
+                      : `${book.minRentalWeeks || 1}–${book.maxRentalWeeks || 8} wks`}
+                  </td>
                   <td>{book.availableCopies}/{book.totalCopies}</td>
                   <td>{book.condition}</td>
                   <td>{book.averageRating > 0 ? `⭐ ${book.averageRating.toFixed(1)}` : '-'}</td>

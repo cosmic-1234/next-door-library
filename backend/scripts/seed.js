@@ -317,6 +317,7 @@ const seedDB = async () => {
     console.log('Creating neighborhood hubs...');
     const hub1 = new Hub({
       hostUser: adminUser._id,
+      city: "Nagpur",
       area: "Dharampeth",
       address: "Flat 401, Vardhaman Heights, Dharampeth",
       contactPhone: "9876543210",
@@ -325,13 +326,23 @@ const seedDB = async () => {
     });
     const hub2 = new Hub({
       hostUser: testUser._id,
+      city: "Nagpur",
       area: "Sitabuldi",
       address: "12, Jhansi Rani Square, Sitabuldi",
       contactPhone: "9823456789",
       description: "College student hosting drop-off hub for south Nagpur readers.",
       status: "active"
     });
-    await Promise.all([hub1.save(), hub2.save()]);
+    const hub3 = new Hub({
+      hostUser: adminUser._id,
+      city: "IIM Udaipur",
+      area: "Balicha Campus Main Gate",
+      address: "IIM Udaipur Campus, Balicha, Udaipur, Rajasthan 313001",
+      contactPhone: "9876543210",
+      description: "Official Next Door Library collection point for IIM Udaipur students, MDP participants, faculty & campus residents.",
+      status: "active"
+    });
+    await Promise.all([hub1.save(), hub2.save(), hub3.save()]);
     console.log('Neighborhood hubs seeded.');
 
     console.log('Database seeding completed successfully! 🎉');

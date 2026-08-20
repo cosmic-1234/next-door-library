@@ -21,14 +21,15 @@ const hubSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  city: {
+    type: String,
+    enum: ['Nagpur', 'IIM Udaipur'],
+    default: 'Nagpur'
+  },
   area: {
     type: String,
-    required: [true, 'Area is required'],
-    enum: [
-      'Dharampeth', 'Sitabuldi', 'Gandhibagh', 'Sadar', 'Civil Lines',
-      'Ramdaspeth', 'Bajaj Nagar', 'Manewada', 'Wardha Road',
-      'Amravati Road', 'Hingna', 'Katol Road', 'Other'
-    ]
+    required: [true, 'Area / Campus location is required'],
+    trim: true
   },
   address: {
     type: String,

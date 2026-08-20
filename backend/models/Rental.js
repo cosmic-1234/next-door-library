@@ -15,7 +15,7 @@ const rentalSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1,
-    max: 8
+    max: 52
   },
   totalCost: {
     type: Number,
@@ -25,6 +25,11 @@ const rentalSchema = new mongoose.Schema({
     type: String,
     enum: ['pickup', 'delivery'],
     default: 'pickup'
+  },
+  location: {
+    type: String,
+    enum: ['Nagpur', 'IIM Udaipur'],
+    default: 'Nagpur'
   },
   deliveryAddress: {
     area: { type: String, default: '' },

@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFilter, FiX, FiChevronLeft, FiChevronRight, FiBookOpen } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiX, FiChevronLeft, FiChevronRight, FiBookOpen, FiMapPin } from 'react-icons/fi';
 import api from '../api/axios';
 import BookCard from '../components/BookCard';
 
 const GENRES = ['Fiction', 'Non-Fiction', 'Mystery', 'Romance', 'Fantasy', 'Science Fiction', 'Biography', 'Self-Help', 'History', 'Children', 'Young Adult', 'Thriller', 'Literary Fiction', 'Philosophy', 'Psychology', 'Business', 'Poetry', 'Other'];
 const LANGUAGES = ['English', 'Hindi', 'Marathi'];
 const CONDITIONS = ['New', 'Good', 'Fair'];
+const LOCATIONS = ['All Locations', 'Nagpur', 'IIM Udaipur'];
 const SORT_OPTIONS = [
   { value: '', label: 'Newest First' },
   { value: 'popular', label: 'Most Popular' },
@@ -17,16 +19,38 @@ const SORT_OPTIONS = [
 ];
 
 export default function Catalogue() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialLoc = searchParams.get('location') || localStorage.getItem('ndl_selected_location') || '';
+
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [filters, setFilters] = useState({
-    search: '', genre: '', language: '', condition: '',
-    available: '', sort: '', minPrice: '', maxPrice: ''
+    search: searchParams.get('search') || '',
+    genre: searchParams.get('genre') || '',
+    language: '',
+    condition: '',
+    location: initialLoc === 'All Locations' ? '' : initialLoc,
+    available: '',
+    sort: '',
+    minPrice: '',
+    maxPrice: ''
   });
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+
+  // Sync with global location change events
+  useEffect(() => {
+    const handleLocUpdate = (e) => {
+      if (e.detail) {
+        const val = e.detail === 'All Locations' ? '' : e.detail;
+        setFilters(p => ({ ...p, location: val }));
+      }
+    };
+    window.addEventListener('ndl_location_change', handleLocUpdate);
+    return () => window.removeEventListener('ndl_location_change', handleLocUpdate);
+  }, []);
 
   // Debounce search
   useEffect(() => {
@@ -44,6 +68,7 @@ export default function Catalogue() {
         ...(filters.genre && { genre: filters.genre }),
         ...(filters.language && { language: filters.language }),
         ...(filters.condition && { condition: filters.condition }),
+        ...(filters.location && { location: filters.location }),
         ...(filters.available && { available: filters.available }),
         ...(filters.sort && { sort: filters.sort }),
         ...(filters.minPrice && { minPrice: filters.minPrice }),
@@ -59,14 +84,16 @@ export default function Catalogue() {
     }
   };
 
-  useEffect(() => { fetchBooks(1); }, [debouncedSearch, filters.genre, filters.language, filters.condition, filters.available, filters.sort, filters.minPrice, filters.maxPrice]);
+  useEffect(() => {
+    fetchBooks(1);
+  }, [debouncedSearch, filters.genre, filters.language, filters.condition, filters.location, filters.available, filters.sort, filters.minPrice, filters.maxPrice]);
 
   useEffect(() => {
     document.title = "Next Door Library | Browse Book Collection";
   }, []);
 
   const updateFilter = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
-  const clearFilters = () => setFilters({ search: '', genre: '', language: '', condition: '', available: '', sort: '', minPrice: '', maxPrice: '' });
+  const clearFilters = () => setFilters({ search: '', genre: '', language: '', condition: '', location: '', available: '', sort: '', minPrice: '', maxPrice: '' });
 
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => k !== 'search' && v !== '').length;
 
@@ -84,6 +111,43 @@ export default function Catalogue() {
               Every book is a world waiting to be explored. Find yours.
             </p>
           </motion.div>
+
+          {/* Location Quick Tabs */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            {LOCATIONS.map(loc => {
+              const val = loc === 'All Locations' ? '' : loc;
+              const isSelected = filters.location === val || (loc === 'All Locations' && !filters.location);
+              return (
+                <button
+                  key={loc}
+                  type="button"
+                  onClick={() => {
+                    updateFilter('location', val);
+                    localStorage.setItem('ndl_selected_location', loc);
+                    window.dispatchEvent(new CustomEvent('ndl_location_change', { detail: loc }));
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 16px',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    border: isSelected ? '1.5px solid var(--brown-rich)' : '1px solid rgba(196, 144, 106, 0.3)',
+                    background: isSelected ? 'var(--brown-rich)' : 'rgba(255, 255, 255, 0.6)',
+                    color: isSelected ? 'var(--cream)' : 'var(--text-secondary)',
+                    boxShadow: isSelected ? '0 4px 12px rgba(44, 24, 16, 0.15)' : 'none'
+                  }}
+                >
+                  <FiMapPin size={12} style={{ color: isSelected ? 'var(--gold)' : 'var(--copper)' }} />
+                  <span>{loc}</span>
+                </button>
+              );
+            })}
+          </div>
 
           {/* Search */}
           <div className="catalogue-search-wrap">
@@ -149,6 +213,15 @@ export default function Catalogue() {
             <div className="container">
               <div className="filter-grid">
                 <div className="form-group">
+                  <label className="form-label">City / Location</label>
+                  <select className="form-input form-select" value={filters.location} onChange={e => updateFilter('location', e.target.value)}>
+                    <option value="">All Locations</option>
+                    <option value="Nagpur">Nagpur</option>
+                    <option value="IIM Udaipur">IIM Udaipur</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
                   <label className="form-label">Genre</label>
                   <select className="form-input form-select" value={filters.genre} onChange={e => updateFilter('genre', e.target.value)}>
                     <option value="">All Genres</option>
@@ -181,13 +254,11 @@ export default function Catalogue() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Min Price (₹/week)</label>
-                  <input type="number" className="form-input" placeholder="e.g. 10" value={filters.minPrice} onChange={e => updateFilter('minPrice', e.target.value)} min="0" />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Max Price (₹/week)</label>
-                  <input type="number" className="form-input" placeholder="e.g. 30" value={filters.maxPrice} onChange={e => updateFilter('maxPrice', e.target.value)} min="0" />
+                  <label className="form-label">Price Range</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input type="number" className="form-input" placeholder="Min ₹" value={filters.minPrice} onChange={e => updateFilter('minPrice', e.target.value)} min="0" />
+                    <input type="number" className="form-input" placeholder="Max ₹" value={filters.maxPrice} onChange={e => updateFilter('maxPrice', e.target.value)} min="0" />
+                  </div>
                 </div>
               </div>
             </div>
