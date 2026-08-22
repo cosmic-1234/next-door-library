@@ -753,7 +753,11 @@ export default function BookDetail() {
 
               <div className="book-detail-delivery-note">
                 <FiMapPin size={14} />
-                <span>Pickup or home delivery available within Nagpur</span>
+                <span>
+                  {localStorage.getItem('ndl_selected_location') === 'IIM Udaipur'
+                    ? 'Pickup or campus delivery available at IIM Udaipur'
+                    : 'Pickup or home delivery available within Nagpur'}
+                </span>
               </div>
             </div>
           </motion.div>

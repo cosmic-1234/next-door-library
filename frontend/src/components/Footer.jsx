@@ -1,7 +1,18 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiMail, FiHeart, FiMapPin, FiClock } from 'react-icons/fi';
 
 export default function Footer() {
+  const [selectedLocation, setSelectedLocation] = useState(() => localStorage.getItem('ndl_selected_location') || 'All Locations');
+
+  useEffect(() => {
+    const handleLocUpdate = (e) => {
+      if (e.detail) setSelectedLocation(e.detail);
+    };
+    window.addEventListener('ndl_location_change', handleLocUpdate);
+    return () => window.removeEventListener('ndl_location_change', handleLocUpdate);
+  }, []);
+
   return (
     <footer className="footer">
       <div className="container">
@@ -50,7 +61,7 @@ export default function Footer() {
               </div>
               <div className="footer-step">
                 <span className="footer-step-num">03</span>
-                <span>Pick up or home delivery in Nagpur</span>
+                <span>{selectedLocation === 'IIM Udaipur' ? 'Pick up or campus delivery in IIM Udaipur' : 'Pick up or home delivery in Nagpur'}</span>
               </div>
               <div className="footer-step">
                 <span className="footer-step-num">04</span>

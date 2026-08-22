@@ -34,6 +34,7 @@ function StatCounter({ value, label, suffix = '' }) {
 
 export default function Home() {
   const [featuredBooks, setFeaturedBooks] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(() => localStorage.getItem('ndl_selected_location') || 'All Locations');
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 600], [0, 200]);
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
@@ -42,6 +43,14 @@ export default function Home() {
   const statsRef = useRef(null);
   const howInView = useInView(howItWorksRef, { once: true, margin: '-100px' });
   const statsInView = useInView(statsRef, { once: true });
+
+  useEffect(() => {
+    const handleLocUpdate = (e) => {
+      if (e.detail) setSelectedLocation(e.detail);
+    };
+    window.addEventListener('ndl_location_change', handleLocUpdate);
+    return () => window.removeEventListener('ndl_location_change', handleLocUpdate);
+  }, []);
 
   useEffect(() => {
     document.title = "Next Door Library | Book Lending Community";
@@ -65,7 +74,9 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="hero-eyebrow">Nagpur's Community Library</span>
+            <span className="hero-eyebrow">
+              {selectedLocation === 'IIM Udaipur' ? "IIM Udaipur's Community Library" : "Nagpur's Community Library"}
+            </span>
             <h1 className="hero-title">
               Stories find<br />
               <em>their next reader</em>
@@ -93,7 +104,7 @@ export default function Home() {
               <div className="hero-trust-dot" />
               <div className="hero-trust-item" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <FiTruck size={16} style={{ color: 'var(--copper)' }} />
-                <span>Home delivery in Nagpur</span>
+                <span>{selectedLocation === 'IIM Udaipur' ? 'Campus delivery in IIM Udaipur' : 'Home delivery in Nagpur'}</span>
               </div>
               <div className="hero-trust-dot" />
               <div className="hero-trust-item" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -214,7 +225,14 @@ export default function Home() {
           <div className="how-grid">
             {[
               { step: '01', icon: FiSearch, title: 'Browse & Discover', desc: 'Explore our curated catalogue. Filter by genre, price, or availability. Find your next obsession.' },
-              { step: '02', icon: FiMail, title: 'Request to Rent', desc: 'Select your book and duration (1-8 weeks). Choose home delivery or pickup in Nagpur. We\'ll confirm within 24 hours.' },
+              {
+                step: '02',
+                icon: FiMail,
+                title: 'Request to Rent',
+                desc: selectedLocation === 'IIM Udaipur'
+                  ? 'Select your book and duration (1-8 weeks). Choose campus delivery or pickup at IIM Udaipur. We\'ll confirm within 24 hours.'
+                  : 'Select your book and duration (1-8 weeks). Choose home delivery or pickup in Nagpur. We\'ll confirm within 24 hours.'
+              },
               { step: '03', icon: FiBookOpen, title: 'Read & Savour', desc: 'Lose yourself in the pages. Read at your own pace. Mark it read on your profile and leave a review.' },
               { step: '04', icon: FiRefreshCw, title: 'Return & Repeat', desc: 'Return the book, update your reading history, and pick your next adventure. Your shelf, unlimited.' },
             ].map((item, i) => (
@@ -301,7 +319,7 @@ export default function Home() {
                 Your next favourite book<br />is waiting for you
               </h2>
               <p className="community-cta-sub">
-                Become part of Nagpur's growing community of readers.
+                Become part of {selectedLocation === 'IIM Udaipur' ? "IIM Udaipur's" : "Nagpur's"} growing community of readers.
                 Discuss books, see what friends are reading, and discover stories together.
               </p>
               <div className="community-cta-actions">
