@@ -131,7 +131,7 @@ export default function AdminLayout() {
         .sidebar-logo-img {
           width: 28px;
           height: 28px;
-          object-fit: contain;
+          object-fit: cover;
           border-radius: 50%;
         }
 

@@ -303,7 +303,7 @@ export default function Register() {
           max-width: 400px;
         }
         .auth-logo { display: flex; align-items: center; gap: 12px; }
-        .auth-logo-img { width: 48px; height: 48px; object-fit: contain; border-radius: 50%; }
+        .auth-logo-img { width: 48px; height: 48px; object-fit: cover; border-radius: 50%; }
         .auth-logo-text { display: block; font-family: var(--font-serif); font-size: 1.1rem; font-weight: 600; color: var(--cream); }
         .auth-logo-sub { display: block; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--copper-light); margin-top: 3px; }
         .auth-left-title { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 600; color: var(--cream); line-height: 1.2; margin-bottom: 12px; }

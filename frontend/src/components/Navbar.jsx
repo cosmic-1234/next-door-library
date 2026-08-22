@@ -291,16 +291,22 @@ export default function Navbar() {
         }
 
         .navbar-logo-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
           width: 36px;
           height: 36px;
           color: var(--brown-rich);
           flex-shrink: 0;
+          border-radius: 50%;
+          overflow: hidden;
         }
 
         .navbar-logo-img {
           width: 100%;
           height: 100%;
-          object-fit: contain;
+          object-fit: cover;
+          border-radius: 50%;
         }
 
         .navbar-logo-text {

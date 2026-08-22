@@ -131,7 +131,8 @@ export default function Footer() {
         .footer-logo-img {
           width: 32px;
           height: 32px;
-          object-fit: contain;
+          object-fit: cover;
+          border-radius: 50%;
         }
 
         .footer-logo-text {

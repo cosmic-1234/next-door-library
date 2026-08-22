@@ -57,7 +57,8 @@ export default function LoadingScreen() {
         .loading-logo-img {
           width: 60px;
           height: 60px;
-          object-fit: contain;
+          object-fit: cover;
+          border-radius: 50%;
         }
 
         .loading-dots {

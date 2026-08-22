@@ -173,7 +173,7 @@ export default function Login() {
         .auth-logo-img {
           width: 48px;
           height: 48px;
-          object-fit: contain;
+          object-fit: cover;
           border-radius: 50%;
         }
 
