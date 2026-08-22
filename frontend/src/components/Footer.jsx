@@ -24,8 +24,7 @@ export default function Footer() {
               <span className="footer-logo-text">Next Door Library</span>
             </div>
             <p className="footer-tagline">
-              Stories find their next reader.<br />
-              Books that deserve to be loved again.
+              Stories that live just around the corner.
             </p>
             <a
               href="mailto:admin@nextdoorlibrary.in"
