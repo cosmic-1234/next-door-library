@@ -83,7 +83,6 @@ export default function IIMUdaipurPopup({ isOpen, onClose, onSelectLocation }) {
                 </div>
                 <div className="iimu-feature-info">
                   <h4>Campus Delivery</h4>
-                  <p>Hostels H1–H6, MDP block & Balicha gate</p>
                 </div>
               </div>
 
