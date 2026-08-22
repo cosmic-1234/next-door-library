@@ -83,12 +83,6 @@ export default function Footer() {
                 <FiClock size={14} style={{ color: 'var(--copper)' }} /> We respond within 24 hours
               </p>
             </div>
-            <div className="footer-quote">
-              <p className="footer-quote-text">
-                "A reader lives a thousand lives before he dies."
-              </p>
-              <p className="footer-quote-author">- George R.R. Martin</p>
-            </div>
           </div>
         </div>
 
