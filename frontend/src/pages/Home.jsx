@@ -196,9 +196,7 @@ export default function Home() {
           >
             <div className="quote-mark">"</div>
             <blockquote className="quote-text">
-              Reading is an activity that slows you down when all of us are in such a hurry.
-              When you develop this habit early, it helps you be a better human -
-              more empathetic, more emotionally aware.
+              Slow down. Exhale. Reconnect. In a fast-paced world, Next Door Library is your space to pause the rush and return to being human—one page at a time.
             </blockquote>
             <div className="quote-source">- The Philosophy of Next Door Library</div>
           </motion.div>
