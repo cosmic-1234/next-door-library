@@ -12,7 +12,11 @@ const app = express();
 // CORS — allow localhost dev + any Cloud Run URL
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5174',
   'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:3000',
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
@@ -21,6 +25,8 @@ const corsOptions = {
     if (
       !origin || 
       allowedOrigins.includes(origin) || 
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:') ||
       origin.endsWith('.run.app') || 
       origin.endsWith('.onrender.com') || 
       origin.endsWith('nextdoorlibrary.in')
@@ -33,7 +39,7 @@ const corsOptions = {
   credentials: true
 };
 
-app.use('/api', cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

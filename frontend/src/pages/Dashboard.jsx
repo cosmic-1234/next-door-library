@@ -5,6 +5,7 @@ import { FiBook, FiClock, FiCheckCircle, FiAlertCircle, FiHeart, FiUser, FiBookO
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { getCoverUrl } from '../utils/imageUrl';
 
 const STATUS_CONFIG = {
   pending: { label: 'Pending', color: 'var(--gold)', bg: 'rgba(201,168,76,0.1)', icon: FiClock },
@@ -281,7 +282,15 @@ export default function Dashboard() {
                   >
                     <div className="rental-cover">
                       {rental.book?.cover ? (
-                        <img src={rental.book.cover} alt={rental.book.title} />
+                        <img 
+                          src={getCoverUrl(rental.book.cover)} 
+                          alt={rental.book.title} 
+                          onError={(e) => {
+                            if (rental.book.cover?.startsWith('/uploads') && !e.target.src.includes(':5000')) {
+                              e.target.src = `http://localhost:5000${rental.book.cover}`;
+                            }
+                          }} 
+                        />
                       ) : (
                         <div className="rental-cover-placeholder">
                           <FiBook size={24} />
@@ -362,7 +371,17 @@ export default function Dashboard() {
                 {wishlist.map((book, i) => (
                   <Link key={book._id || i} to={`/books/${book._id}`} className="wishlist-item">
                     <div className="wishlist-cover">
-                      {book.cover ? <img src={book.cover} alt={book.title} /> : <FiBook size={20} />}
+                      {book.cover ? (
+                        <img 
+                          src={getCoverUrl(book.cover)} 
+                          alt={book.title} 
+                          onError={(e) => {
+                            if (book.cover?.startsWith('/uploads') && !e.target.src.includes(':5000')) {
+                              e.target.src = `http://localhost:5000${book.cover}`;
+                            }
+                          }}
+                        />
+                      ) : <FiBook size={20} />}
                     </div>
                     <div className="wishlist-info">
                       <p className="wishlist-title">{book.title}</p>

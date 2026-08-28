@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiStar, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiStar, FiSearch, FiUpload, FiLink, FiImage } from 'react-icons/fi';
 import api from '../../api/axios';
+import { getCoverUrl } from '../../utils/imageUrl';
 
 const GENRES = ['Fiction', 'Non-Fiction', 'Mystery', 'Romance', 'Fantasy', 'Science Fiction', 'Biography', 'Self-Help', 'History', 'Children', 'Young Adult', 'Thriller', 'Literary Fiction', 'Philosophy', 'Psychology', 'Business', 'Poetry', 'Other'];
 const ALL_LOCATIONS = ['Nagpur', 'IIM Udaipur'];
@@ -11,7 +12,8 @@ const EMPTY_BOOK = {
   condition: 'Good', pricePerWeek: 20, totalCopies: 1,
   minRentalWeeks: 1, maxRentalWeeks: 8, allowedRentalWeeks: '',
   availableLocations: ['Nagpur', 'IIM Udaipur'],
-  publishedYear: '', publisher: '', pages: '', isbn: '', tags: '', featured: false
+  publishedYear: '', publisher: '', pages: '', isbn: '', tags: '', featured: false,
+  cover: ''
 };
 
 function BookFormModal({ book, onClose, onSave }) {
@@ -20,6 +22,7 @@ function BookFormModal({ book, onClose, onSave }) {
     if (book) {
       return {
         ...book,
+        cover: book.cover || '',
         minRentalWeeks: book.minRentalWeeks ?? 1,
         maxRentalWeeks: book.maxRentalWeeks ?? 8,
         allowedRentalWeeks: Array.isArray(book.allowedRentalWeeks) ? book.allowedRentalWeeks.join(', ') : (book.allowedRentalWeeks || ''),
@@ -28,8 +31,24 @@ function BookFormModal({ book, onClose, onSave }) {
     }
     return EMPTY_BOOK;
   });
+  const [coverSource, setCoverSource] = useState(book?.cover && !book.cover.startsWith('/uploads') ? 'url' : 'file');
   const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(() => getCoverUrl(book?.cover) || '');
   const [loading, setLoading] = useState(false);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCoverFile(file);
+      setCoverPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUrlChange = (e) => {
+    const val = e.target.value;
+    setForm(p => ({ ...p, cover: val }));
+    setCoverPreview(val);
+  };
 
   const toggleLocation = (loc) => {
     setForm(p => {
@@ -52,6 +71,9 @@ function BookFormModal({ book, onClose, onSave }) {
         if (k === 'tags') formData.append(k, typeof v === 'string' ? v : v.join(','));
         else if (k === 'allowedRentalWeeks') formData.append(k, typeof v === 'string' ? v : v.join(','));
         else if (k === 'availableLocations') formData.append(k, Array.isArray(v) ? v.join(',') : v);
+        else if (k === 'cover') {
+          if (!coverFile && v) formData.append('cover', v.trim());
+        }
         else if (v !== '' && v !== null && v !== undefined) formData.append(k, v);
       });
       if (coverFile) formData.append('cover', coverFile);
@@ -204,12 +226,76 @@ function BookFormModal({ book, onClose, onSave }) {
             </div>
 
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <label className="form-label">Cover Image</label>
-              <input type="file" className="form-input" accept="image/*" onChange={e => setCoverFile(e.target.files[0])} />
-              {book?.cover && !coverFile && (
-                <div style={{ marginTop: '8px' }}>
-                  <img src={book.cover} alt="" style={{ height: '80px', borderRadius: '6px', objectFit: 'cover' }} />
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Current cover (upload new to replace)</p>
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Cover Image</span>
+                <span style={{ display: 'flex', gap: '8px', fontSize: '11px', fontWeight: 500 }}>
+                  <button
+                    type="button"
+                    style={{
+                      background: coverSource === 'file' ? 'var(--brown-rich)' : 'transparent',
+                      color: coverSource === 'file' ? 'var(--cream)' : 'var(--text-secondary)',
+                      border: '1px solid rgba(196,144,106,0.3)',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    onClick={() => setCoverSource('file')}
+                  >
+                    <FiUpload size={12} /> Upload File
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      background: coverSource === 'url' ? 'var(--brown-rich)' : 'transparent',
+                      color: coverSource === 'url' ? 'var(--cream)' : 'var(--text-secondary)',
+                      border: '1px solid rgba(196,144,106,0.3)',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    onClick={() => setCoverSource('url')}
+                  >
+                    <FiLink size={12} /> Image URL
+                  </button>
+                </span>
+              </label>
+
+              {coverSource === 'file' ? (
+                <input type="file" className="form-input" accept="image/*" onChange={handleFileChange} />
+              ) : (
+                <input
+                  type="url"
+                  className="form-input"
+                  placeholder="https://example.com/book-cover.jpg"
+                  value={form.cover}
+                  onChange={handleUrlChange}
+                />
+              )}
+
+              {coverPreview && (
+                <div style={{ marginTop: '10px', display: 'flex', gap: '12px', alignItems: 'center', padding: '10px', background: 'rgba(196,144,106,0.06)', borderRadius: '6px', border: '1px solid rgba(196,144,106,0.15)' }}>
+                  <img
+                    src={getCoverUrl(coverPreview)}
+                    alt="Cover preview"
+                    onError={(e) => {
+                      if (coverPreview?.startsWith('/uploads') && !e.target.src.includes(':5000')) {
+                        e.target.src = `http://localhost:5000${coverPreview}`;
+                      }
+                    }}
+                    style={{ width: '48px', height: '64px', borderRadius: '4px', objectFit: 'cover', border: '1px solid rgba(196,144,106,0.2)' }}
+                  />
+                  <div>
+                    <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Cover Preview</p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                      {coverFile ? `File: ${coverFile.name}` : (coverSource === 'url' ? 'From Web URL' : 'Current Saved Cover')}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -324,7 +410,18 @@ export default function AdminBooks() {
                 <motion.tr key={book._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
                   <td>
                     <div style={{ width: '36px', height: '48px', borderRadius: '4px', overflow: 'hidden', background: 'var(--cream-dark)' }}>
-                      {book.cover ? <img src={book.cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                      {book.cover ? (
+                        <img 
+                          src={getCoverUrl(book.cover)} 
+                          alt="" 
+                          onError={(e) => {
+                            if (book.cover?.startsWith('/uploads') && !e.target.src.includes(':5000')) {
+                              e.target.src = `http://localhost:5000${book.cover}`;
+                            }
+                          }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                      ) : null}
                     </div>
                   </td>
                   <td>

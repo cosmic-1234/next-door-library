@@ -5,6 +5,7 @@ import { FiUserPlus, FiSearch, FiBook } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { getCoverUrl } from '../utils/imageUrl';
 
 export default function FriendsFeed() {
   const { user } = useAuth();
@@ -140,7 +141,15 @@ export default function FriendsFeed() {
                       <Link to={`/books/${reader.currentlyReading._id}`} className="feed-book-card">
                         <div className="feed-book-cover">
                           {reader.currentlyReading.cover ? (
-                            <img src={reader.currentlyReading.cover} alt="" />
+                            <img 
+                              src={getCoverUrl(reader.currentlyReading.cover)} 
+                              alt="" 
+                              onError={(e) => {
+                                if (reader.currentlyReading.cover?.startsWith('/uploads') && !e.target.src.includes(':5000')) {
+                                  e.target.src = `http://localhost:5000${reader.currentlyReading.cover}`;
+                                }
+                              }} 
+                            />
                           ) : (
                             <FiBook size={20} style={{ color: 'var(--copper-light)' }} />
                           )}

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { FiHeart, FiMessageCircle, FiEye, FiPlusCircle, FiX, FiBook } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getCoverUrl } from '../utils/imageUrl';
 
 const CATEGORIES = ['Discussion', 'Recommendation', 'Review', 'Question', 'General'];
 
@@ -38,7 +39,17 @@ function PostCard({ post, onLike, onOpen }) {
       {post.book && (
         <Link to={`/books/${post.book._id}`} className="forum-book-link">
           <div className="forum-book-thumb">
-            {post.book.cover ? <img src={post.book.cover} alt="" /> : <FiBook size={14} />}
+            {post.book.cover ? (
+              <img 
+                src={getCoverUrl(post.book.cover)} 
+                alt="" 
+                onError={(e) => {
+                  if (post.book.cover?.startsWith('/uploads') && !e.target.src.includes(':5000')) {
+                    e.target.src = `http://localhost:5000${post.book.cover}`;
+                  }
+                }}
+              />
+            ) : <FiBook size={14} />}
           </div>
           <span>{post.book.title}</span>
         </Link>

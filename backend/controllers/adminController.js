@@ -89,6 +89,8 @@ const createBook = async (req, res) => {
     const bookData = { ...req.body, addedBy: req.user._id };
     if (req.file) {
       bookData.cover = `/uploads/${req.file.filename}`;
+    } else if (typeof req.body.cover === 'string') {
+      bookData.cover = req.body.cover.trim();
     }
     if (typeof bookData.allowedRentalWeeks === 'string') {
       bookData.allowedRentalWeeks = bookData.allowedRentalWeeks
@@ -122,6 +124,8 @@ const updateBook = async (req, res) => {
     const updateData = { ...req.body };
     if (req.file) {
       updateData.cover = `/uploads/${req.file.filename}`;
+    } else if (typeof req.body.cover === 'string') {
+      updateData.cover = req.body.cover.trim();
     }
     if (typeof updateData.allowedRentalWeeks === 'string') {
       updateData.allowedRentalWeeks = updateData.allowedRentalWeeks

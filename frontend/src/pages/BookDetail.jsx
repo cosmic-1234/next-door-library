@@ -6,6 +6,7 @@ import { FiArrowLeft, FiHeart, FiShare2, FiStar, FiCalendar, FiBookOpen, FiClock
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import BookCard from '../components/BookCard';
+import { getCoverUrl } from '../utils/imageUrl';
 
 const NAGPUR_AREAS = ['Dharampeth', 'Sitabuldi', 'Gandhibagh', 'Sadar', 'Civil Lines', 'Ramdaspeth', 'Bajaj Nagar', 'Manewada', 'Wardha Road', 'Amravati Road', 'Hingna', 'Katol Road', 'Other (Nagpur)'];
 const IIMU_AREAS = [
@@ -533,9 +534,27 @@ export default function BookDetail() {
   const [rentModalOpen, setRentModalOpen] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [imgSrc, setImgSrc] = useState('');
   const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', body: '', hasSpoilers: false });
   const [reviewLoading, setReviewLoading] = useState(false);
   const [showSpoilers, setShowSpoilers] = useState({});
+
+  useEffect(() => {
+    if (book?.cover) {
+      setImgSrc(getCoverUrl(book.cover));
+      setImageError(false);
+    }
+  }, [book?.cover]);
+
+  const handleImageError = () => {
+    const rawCover = book?.cover;
+    if (rawCover && (rawCover.startsWith('/uploads') || rawCover.startsWith('uploads')) && !imgSrc.startsWith('http://localhost:5000')) {
+      const clean = rawCover.startsWith('/') ? rawCover : `/${rawCover}`;
+      setImgSrc(`http://localhost:5000${clean}`);
+    } else {
+      setImageError(true);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -636,11 +655,11 @@ export default function BookDetail() {
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="book-detail-cover">
-              {book.cover && !imageError ? (
+              {imgSrc && !imageError ? (
                 <img 
-                  src={book.cover} 
+                  src={imgSrc} 
                   alt={book.title} 
-                  onError={() => setImageError(true)}
+                  onError={handleImageError}
                 />
               ) : (
                 <div className="book-detail-cover-placeholder">

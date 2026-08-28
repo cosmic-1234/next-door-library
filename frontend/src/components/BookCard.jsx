@@ -1,13 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { FiStar, FiBookOpen, FiHeart } from 'react-icons/fi';
+import { getCoverUrl } from '../utils/imageUrl';
 
 const conditionColors = { New: 'var(--sage)', Good: 'var(--copper)', Fair: 'var(--text-muted)' };
 
 export default function BookCard({ book, delay = 0 }) {
+  const coverUrl = getCoverUrl(book.cover);
+  const [imgSrc, setImgSrc] = useState(coverUrl);
   const [imageError, setImageError] = useState(false);
   const isAvailable = book.availableCopies > 0;
+
+  useEffect(() => {
+    setImgSrc(getCoverUrl(book.cover));
+    setImageError(false);
+  }, [book.cover, book._id]);
+
+  const handleImageError = () => {
+    if (coverUrl && coverUrl.startsWith('/uploads') && !imgSrc.startsWith('http://localhost:5000')) {
+      setImgSrc(`http://localhost:5000${coverUrl}`);
+    } else {
+      setImageError(true);
+    }
+  };
 
   return (
     <motion.div
@@ -17,12 +33,12 @@ export default function BookCard({ book, delay = 0 }) {
     >
       <Link to={`/books/${book._id}`} className="book-card">
         <div className="book-card-cover-wrap">
-          {book.cover && !imageError ? (
+          {imgSrc && !imageError ? (
             <img 
-              src={book.cover} 
+              src={imgSrc} 
               alt={book.title} 
               className="book-card-cover" 
-              onError={() => setImageError(true)}
+              onError={handleImageError}
             />
           ) : (
             <div className="book-card-cover-placeholder">
