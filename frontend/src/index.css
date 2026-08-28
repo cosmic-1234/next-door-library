@@ -495,11 +495,43 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 60vh;
 }
 
-/* ==================== SCROLLBAR ==================== */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--cream-dark); }
-::-webkit-scrollbar-thumb { background: var(--copper-light); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--copper); }
+/* ==================== SCROLLBAR (GLOBAL MODERN SYSTEM) ==================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(196, 144, 106, 0.35) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(196, 144, 106, 0.35);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(196, 144, 106, 0.7);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* ==================== ANIMATIONS ==================== */
 @keyframes fadeInUp {
