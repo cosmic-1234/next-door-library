@@ -7,6 +7,8 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import BookCard from '../components/BookCard';
 import { getCoverUrl } from '../utils/imageUrl';
+import { loadRazorpay } from '../utils/loadRazorpay';
+import confetti from 'canvas-confetti';
 
 const NAGPUR_AREAS = ['Dharampeth', 'Sitabuldi', 'Gandhibagh', 'Sadar', 'Civil Lines', 'Ramdaspeth', 'Bajaj Nagar', 'Manewada', 'Wardha Road', 'Amravati Road', 'Hingna', 'Katol Road', 'Other (Nagpur)'];
 const IIMU_AREAS = [
@@ -64,12 +66,7 @@ function RentModal({ book, onClose }) {
   const [loading, setLoading] = useState(false);
 
   const [step, setStep] = useState('checkout'); // 'checkout' | 'payment' | 'processing'
-  const [payMethod, setPayMethod] = useState('cod'); // 'cod' | 'upi' | 'card'
-  const [cardNo, setCardNo] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [cardName, setCardName] = useState('');
-  const [upiId, setUpiId] = useState('');
+  const [payMethod, setPayMethod] = useState('online'); // 'online' | 'cod'
   const [processingStatus, setProcessingStatus] = useState('');
 
   const totalCost = book.pricePerWeek * weeks;
@@ -86,50 +83,128 @@ function RentModal({ book, onClose }) {
   };
 
   const handlePaymentSubmit = async () => {
-    if (payMethod === 'upi') {
-      if (!upiId.trim() && !confirm('Simulating QR Scan: Did you scan the QR code to pay? Click OK to confirm payment, or Cancel to enter a UPI ID instead.')) {
-        return;
+    if (!user) { navigate('/login'); return; }
+    setLoading(true);
+
+    if (payMethod === 'cod') {
+      // Cash on delivery flow
+      setStep('processing');
+      setProcessingStatus('Registering Cash on Delivery rental request...');
+      try {
+        await api.post('/rentals', {
+          bookId: book._id,
+          weeksDuration: weeks,
+          location,
+          deliveryType,
+          deliveryAddress: { area, pincode },
+          userNote: note,
+          paymentStatus: 'cod',
+          paymentMethod: 'COD',
+          paymentId: `COD_${Date.now()}`
+        });
+
+        try { confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } }); } catch {}
+        toast.success('Rental request submitted with Cash on Delivery!');
+        onClose();
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to place rental request');
+        setStep('payment');
+      } finally {
+        setLoading(false);
       }
-    }
-    if (payMethod === 'card') {
-      if (!cardName.trim() || cardNo.replace(/\s+/g, '').length < 16 || cardExpiry.length < 5 || cardCvv.length < 3) {
-        toast.error('Please fill in valid Card Details');
-        return;
-      }
+      return;
     }
 
+    // Online Payment via Razorpay
     setStep('processing');
-    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    setProcessingStatus('Initializing secure Razorpay gateway...');
 
     try {
-      setProcessingStatus('Initiating secure connection with gateway...');
-      await sleep(1000);
-      setProcessingStatus('Verifying authorization with your bank...');
-      await sleep(1200);
-      setProcessingStatus('Finalizing transaction...');
-      await sleep(800);
-
-      const txnId = payMethod === 'cod' ? '' : 'TXN_' + Math.random().toString(36).substring(2, 10).toUpperCase();
-      const pStatus = payMethod === 'cod' ? 'cod' : 'paid';
-      const pMethod = payMethod.toUpperCase();
-
-      await api.post('/rentals', {
+      // 1. Create order on backend
+      const orderRes = await api.post('/payments/create-order', {
         bookId: book._id,
         weeksDuration: weeks,
         location,
         deliveryType,
         deliveryAddress: { area, pincode },
-        userNote: note,
-        paymentStatus: pStatus,
-        paymentMethod: pMethod,
-        paymentId: txnId
+        userNote: note
       });
 
-      toast.success('Payment successful & rental request submitted!');
-      onClose();
+      const orderData = orderRes.data;
+
+      // 2. Load Razorpay SDK
+      setProcessingStatus('Connecting to Razorpay checkout...');
+      const scriptLoaded = await loadRazorpay();
+      if (!scriptLoaded || !window.Razorpay) {
+        // Fallback if Razorpay CDN is blocked
+        toast.error('Could not load Razorpay SDK. Please check your internet connection or choose Cash on Delivery.');
+        setStep('payment');
+        setLoading(false);
+        return;
+      }
+
+      // 3. Configure and open Razorpay Modal
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'Next Door Library',
+        description: `Rent "${book.title}" (${weeks} wk${weeks > 1 ? 's' : ''})`,
+        image: getCoverUrl(book.cover) || undefined,
+        order_id: orderData.orderId.startsWith('order_mock_') ? undefined : orderData.orderId,
+        handler: async function (response) {
+          setStep('processing');
+          setProcessingStatus('Verifying payment signature with server...');
+          try {
+            await api.post('/payments/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id || orderData.orderId,
+              razorpay_payment_id: response.razorpay_payment_id || `PAY_${Date.now()}`,
+              razorpay_signature: response.razorpay_signature || 'mock_signature',
+              bookId: book._id,
+              weeksDuration: weeks,
+              location,
+              deliveryType,
+              deliveryAddress: { area, pincode },
+              userNote: note
+            });
+
+            try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch {}
+            toast.success('Payment verified & rental confirmed! 🎉');
+            onClose();
+          } catch (err) {
+            toast.error(err.response?.data?.message || 'Payment verification failed');
+            setStep('payment');
+          } finally {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
+        },
+        theme: {
+          color: '#3b2314'
+        },
+        modal: {
+          ondismiss: function () {
+            setStep('payment');
+            setLoading(false);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        toast.error(response.error?.description || 'Payment was unsuccessful');
+        setStep('payment');
+        setLoading(false);
+      });
+      rzp.open();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Transaction failed. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to initialize payment order');
       setStep('payment');
+      setLoading(false);
     }
   };
 
@@ -306,111 +381,71 @@ function RentModal({ book, onClose }) {
           <div>
             <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>Select Payment Method</h3>
             
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
               <button
                 type="button"
-                className={`delivery-option ${payMethod === 'upi' ? 'delivery-option-active' : ''}`}
-                onClick={() => setPayMethod('upi')}
-                style={{ flex: 1, padding: '12px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
+                className={`delivery-option ${payMethod === 'online' ? 'delivery-option-active' : ''}`}
+                onClick={() => setPayMethod('online')}
+                style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}
               >
-                <FiSmartphone size={20} style={{ color: payMethod === 'upi' ? 'var(--cream)' : 'var(--copper)' }} />
-                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>UPI App / QR</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FiCreditCard size={20} style={{ color: payMethod === 'online' ? 'var(--brown-rich)' : 'var(--copper)' }} />
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>Pay Online</span>
+                  </div>
+                  <span style={{ fontSize: '10px', background: 'rgba(59,35,20,0.1)', color: 'var(--brown-rich)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Razorpay</span>
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                  Instant checkout with UPI (GPay, PhonePe), Debit/Credit Cards, NetBanking.
+                </p>
               </button>
-              <button
-                type="button"
-                className={`delivery-option ${payMethod === 'card' ? 'delivery-option-active' : ''}`}
-                onClick={() => setPayMethod('card')}
-                style={{ flex: 1, padding: '12px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
-              >
-                <FiCreditCard size={20} style={{ color: payMethod === 'card' ? 'var(--cream)' : 'var(--copper)' }} />
-                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>Credit Card</span>
-              </button>
+
               <button
                 type="button"
                 className={`delivery-option ${payMethod === 'cod' ? 'delivery-option-active' : ''}`}
                 onClick={() => setPayMethod('cod')}
-                style={{ flex: 1, padding: '12px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
+                style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}
               >
-                <FiDollarSign size={20} style={{ color: payMethod === 'cod' ? 'var(--cream)' : 'var(--copper)' }} />
-                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>Pay on Delivery</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FiDollarSign size={20} style={{ color: payMethod === 'cod' ? 'var(--brown-rich)' : 'var(--copper)' }} />
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>Cash on Delivery</span>
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                  Pay ₹{totalCost} upon doorstep delivery or physical pickup at the neighborhood hub.
+                </p>
               </button>
             </div>
-            
-            {/* UPI Section */}
-            {payMethod === 'upi' && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid var(--cream-dark)', borderRadius: '8px', backgroundColor: 'var(--cream-light)', marginBottom: '16px' }}>
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=nextdoorlibrary@okaxis%26pn=NextDoorLibrary Nagpur%26am=${totalCost}%26cu=INR`} 
-                  alt="UPI QR Code" 
-                  style={{ width: '130px', height: '130px', border: '4px solid white', borderRadius: '4px', boxShadow: 'var(--shadow-sm)' }}
-                />
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>Scan QR Code with GPay / PhonePe to pay</p>
-                <div style={{ width: '100%', marginTop: '6px' }}>
-                  <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Or Enter UPI ID</label>
-                  <input className="form-input" placeholder="e.g. username@okhdfcbank" value={upiId} onChange={e => setUpiId(e.target.value)} />
+
+            {payMethod === 'online' && (
+              <div style={{ padding: '16px', border: '1px solid rgba(196,144,106,0.25)', borderRadius: '8px', backgroundColor: 'rgba(196,144,106,0.06)', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--brown-rich)' }}>🔒 256-Bit Encrypted Payment</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>UPI • Cards • NetBanking</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {['GPay', 'PhonePe', 'Paytm', 'Visa', 'Mastercard', 'RuPay', 'NetBanking'].map(tag => (
+                    <span key={tag} style={{ fontSize: '10px', background: 'white', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(196,144,106,0.2)', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      {tag}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
-            
-            {/* Card Section */}
-            {payMethod === 'card' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', border: '1px solid var(--cream-dark)', borderRadius: '8px', backgroundColor: 'var(--cream-light)', marginBottom: '16px' }}>
-                <div>
-                  <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Cardholder Name</label>
-                  <input className="form-input" placeholder="Name on Card" value={cardName} onChange={e => setCardName(e.target.value)} />
-                </div>
-                <div>
-                  <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Card Number</label>
-                  <input className="form-input" placeholder="1234 5678 1234 5678" value={cardNo} onChange={e => {
-                    const val = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-                    const matches = val.match(/\d{4,16}/g);
-                    const match = (matches && matches[0]) || '';
-                    const parts = [];
-                    for (let i=0, len=match.length; i<len; i+=4) {
-                      parts.push(match.substring(i, i+4));
-                    }
-                    if (parts.length > 0) {
-                      setCardNo(parts.join(' '));
-                    } else {
-                      setCardNo(val);
-                    }
-                  }} maxLength={19} />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Expiry Date</label>
-                    <input className="form-input" placeholder="MM/YY" value={cardExpiry} onChange={e => {
-                      const val = e.target.value.replace(/\//g, '').replace(/[^0-9]/gi, '');
-                      if (val.length >= 2) {
-                        setCardExpiry(val.substring(0, 2) + '/' + val.substring(2, 4));
-                      } else {
-                        setCardExpiry(val);
-                      }
-                    }} maxLength={5} />
-                  </div>
-                  <div>
-                    <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>CVV</label>
-                    <input className="form-input" type="password" placeholder="•••" value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/[^0-9]/gi, ''))} maxLength={3} />
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* COD Section */}
+
             {payMethod === 'cod' && (
-              <div style={{ padding: '16px', border: '1px solid var(--cream-dark)', borderRadius: '8px', backgroundColor: 'var(--cream-light)', marginBottom: '16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <div style={{ padding: '16px', border: '1px solid rgba(196,144,106,0.25)', borderRadius: '8px', backgroundColor: 'rgba(196,144,106,0.06)', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                 <FiCheckCircle size={18} style={{ color: 'var(--copper)', flexShrink: 0, marginTop: '2px' }} />
-                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-                  <strong>Pay on Delivery / Collection</strong>: You will pay ₹{totalCost} at the time of delivery or self-pickup. We will confirm your request via email (admin@nextdoorlibrary.in).
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+                  <strong>Pay on Delivery / Collection</strong>: You will pay ₹{totalCost} at the time of delivery or hub self-pickup. We will confirm your request via email (admin@nextdoorlibrary.in).
                 </p>
               </div>
             )}
-            
+
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setStep('checkout')} style={{ flex: 1 }}>Back</button>
-              <button type="button" className="btn btn-primary" onClick={handlePaymentSubmit} style={{ flex: 2 }}>
-                {payMethod === 'cod' ? 'Complete Request' : `Pay ₹${totalCost}`}
+              <button type="button" className="btn btn-primary" onClick={handlePaymentSubmit} disabled={loading} style={{ flex: 2 }}>
+                {payMethod === 'cod' ? 'Confirm Request (Cash)' : `Pay ₹${totalCost} with Razorpay`}
               </button>
             </div>
           </div>
