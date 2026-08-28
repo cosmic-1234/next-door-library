@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiArrowLeft, FiHeart, FiShare2, FiStar, FiCalendar, FiBookOpen, FiClock, FiMapPin, FiTruck, FiAlertTriangle, FiX, FiSmartphone, FiCreditCard, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiHeart, FiShare2, FiStar, FiCalendar, FiBookOpen, FiClock, FiMapPin, FiTruck, FiAlertTriangle, FiX, FiSmartphone, FiCreditCard, FiDollarSign, FiCheckCircle, FiLock, FiShield, FiCheck, FiArrowRight, FiZap } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import BookCard from '../components/BookCard';
@@ -223,8 +223,20 @@ function RentModal({ book, onClose }) {
         <button className="modal-close" onClick={onClose}><FiX /></button>
 
         <div className="rent-modal-header">
-          <h2 className="rent-modal-title">Request to Rent</h2>
-          <p className="rent-modal-book">"{book.title}" by {book.author}</p>
+          <div className="rent-modal-breadcrumbs">
+            <span className={step === 'checkout' ? 'breadcrumb-active' : 'breadcrumb-done'}>
+              1. Delivery & Duration
+            </span>
+            <span className="breadcrumb-arrow">→</span>
+            <span className={step === 'payment' ? 'breadcrumb-active' : ''}>
+              2. Payment & Confirmation
+            </span>
+          </div>
+
+          <h2 className="rent-modal-title">
+            {step === 'checkout' ? 'Request to Rent' : 'Complete Your Rental'}
+          </h2>
+          <p className="rent-modal-book">"{book.title}" <span>by {book.author}</span></p>
         </div>
 
         {step === 'checkout' && (
@@ -368,99 +380,183 @@ function RentModal({ book, onClose }) {
 
             <div className="rent-disclaimer">
               <FiAlertTriangle size={14} />
-              <p>We'll contact you via email at admin@nextdoorlibrary.in within 24 hours to confirm. Choose payment method on next step.</p>
+              <p>We'll coordinate with you via email (admin@nextdoorlibrary.in). Review payment options on the next step.</p>
             </div>
 
-            <button type="submit" className="btn btn-primary w-full btn-lg" style={{ marginTop: '16px' }}>
-              Proceed to Payment - ₹{totalCost}
+            <button type="submit" className="btn btn-primary w-full btn-lg" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <span>Continue to Payment</span>
+              <FiArrowRight size={16} />
             </button>
           </form>
         )}
 
         {step === 'payment' && (
-          <div>
-            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>Select Payment Method</h3>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-              <button
-                type="button"
-                className={`delivery-option ${payMethod === 'online' ? 'delivery-option-active' : ''}`}
-                onClick={() => setPayMethod('online')}
-                style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FiCreditCard size={20} style={{ color: payMethod === 'online' ? 'var(--brown-rich)' : 'var(--copper)' }} />
-                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>Pay Online</span>
+          <div className="payment-checkout-container">
+            {/* Book & Rental Snapshot Card */}
+            <div className="loan-receipt-card">
+              <div className="loan-receipt-header">
+                <div className="loan-receipt-thumb">
+                  {book.cover ? (
+                    <img src={getCoverUrl(book.cover)} alt="" />
+                  ) : (
+                    <FiBookOpen size={20} />
+                  )}
+                </div>
+                <div className="loan-receipt-book-info">
+                  <div className="loan-receipt-badge">
+                    {weeks} Week{weeks > 1 ? 's' : ''} Loan • {location}
                   </div>
-                  <span style={{ fontSize: '10px', background: 'rgba(59,35,20,0.1)', color: 'var(--brown-rich)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Razorpay</span>
+                  <h4 className="loan-receipt-title">{book.title}</h4>
+                  <p className="loan-receipt-author">by {book.author}</p>
                 </div>
-                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-                  Instant checkout with UPI (GPay, PhonePe), Debit/Credit Cards, NetBanking.
-                </p>
-              </button>
+              </div>
 
-              <button
-                type="button"
-                className={`delivery-option ${payMethod === 'cod' ? 'delivery-option-active' : ''}`}
-                onClick={() => setPayMethod('cod')}
-                style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FiDollarSign size={20} style={{ color: payMethod === 'cod' ? 'var(--brown-rich)' : 'var(--copper)' }} />
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>Cash on Delivery</span>
+              <div className="loan-receipt-divider" />
+
+              <div className="loan-receipt-details">
+                <div className="loan-receipt-row">
+                  <span>Rental Rate</span>
+                  <span>₹{book.pricePerWeek} × {weeks} week{weeks > 1 ? 's' : ''}</span>
                 </div>
-                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-                  Pay ₹{totalCost} upon doorstep delivery or physical pickup at the neighborhood hub.
-                </p>
-              </button>
+                <div className="loan-receipt-row">
+                  <span>Fulfillment</span>
+                  <span>{deliveryType === 'delivery' ? `Delivery to ${area || 'Nagpur'}` : 'Self Pickup at Hub'}</span>
+                </div>
+                <div className="loan-receipt-row">
+                  <span>Security Deposit</span>
+                  <span style={{ color: 'var(--sage)', fontWeight: 600 }}>₹0 (Community Trust)</span>
+                </div>
+                <div className="loan-receipt-divider-dashed" />
+                <div className="loan-receipt-row loan-receipt-total-row">
+                  <span>Total Amount Payable</span>
+                  <span className="loan-receipt-total-price">₹{totalCost}</span>
+                </div>
+              </div>
             </div>
 
-            {payMethod === 'online' && (
-              <div style={{ padding: '16px', border: '1px solid rgba(196,144,106,0.25)', borderRadius: '8px', backgroundColor: 'rgba(196,144,106,0.06)', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--brown-rich)' }}>🔒 256-Bit Encrypted Payment</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>UPI • Cards • NetBanking</span>
+            {/* Payment Method Selector */}
+            <div className="payment-options-section">
+              <label className="payment-section-label">Choose Payment Method</label>
+
+              <div className="payment-options-list">
+                {/* Option 1: Razorpay Online */}
+                <div
+                  className={`payment-method-card ${payMethod === 'online' ? 'payment-method-selected' : ''}`}
+                  onClick={() => setPayMethod('online')}
+                >
+                  <div className="payment-card-radio">
+                    <div className={`radio-dot ${payMethod === 'online' ? 'radio-dot-active' : ''}`} />
+                  </div>
+                  <div className="payment-card-content">
+                    <div className="payment-card-title-row">
+                      <div className="payment-card-title-wrap">
+                        <FiCreditCard size={18} className="payment-card-icon" />
+                        <span className="payment-card-title">Pay Online</span>
+                      </div>
+                      <span className="payment-tag-instant">Instant Confirmation</span>
+                    </div>
+                    <p className="payment-card-desc">
+                      Pay instantly with UPI (GPay, PhonePe, Paytm), Debit/Credit Cards, or NetBanking.
+                    </p>
+                    <div className="payment-inline-methods">
+                      <span className="mini-pill">UPI</span>
+                      <span className="mini-pill">GPay</span>
+                      <span className="mini-pill">PhonePe</span>
+                      <span className="mini-pill">Cards</span>
+                      <span className="mini-pill">NetBanking</span>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {['GPay', 'PhonePe', 'Paytm', 'Visa', 'Mastercard', 'RuPay', 'NetBanking'].map(tag => (
-                    <span key={tag} style={{ fontSize: '10px', background: 'white', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(196,144,106,0.2)', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                      {tag}
-                    </span>
-                  ))}
+
+                {/* Option 2: Cash on Delivery */}
+                <div
+                  className={`payment-method-card ${payMethod === 'cod' ? 'payment-method-selected' : ''}`}
+                  onClick={() => setPayMethod('cod')}
+                >
+                  <div className="payment-card-radio">
+                    <div className={`radio-dot ${payMethod === 'cod' ? 'radio-dot-active' : ''}`} />
+                  </div>
+                  <div className="payment-card-content">
+                    <div className="payment-card-title-row">
+                      <div className="payment-card-title-wrap">
+                        <FiDollarSign size={18} className="payment-card-icon" />
+                        <span className="payment-card-title">Cash on Delivery / Collection</span>
+                      </div>
+                    </div>
+                    <p className="payment-card-desc">
+                      Pay ₹{totalCost} in cash when you pick up or receive the book at your doorstep.
+                    </p>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {payMethod === 'cod' && (
-              <div style={{ padding: '16px', border: '1px solid rgba(196,144,106,0.25)', borderRadius: '8px', backgroundColor: 'rgba(196,144,106,0.06)', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                <FiCheckCircle size={18} style={{ color: 'var(--copper)', flexShrink: 0, marginTop: '2px' }} />
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-                  <strong>Pay on Delivery / Collection</strong>: You will pay ₹{totalCost} at the time of delivery or hub self-pickup. We will confirm your request via email (admin@nextdoorlibrary.in).
-                </p>
-              </div>
-            )}
+            {/* Security Guarantee Strip */}
+            <div className="payment-security-strip">
+              <FiShield size={14} className="security-icon" />
+              <span>256-Bit SSL Encrypted • Powered by Razorpay Banking Gateway</span>
+            </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setStep('checkout')} style={{ flex: 1 }}>Back</button>
-              <button type="button" className="btn btn-primary" onClick={handlePaymentSubmit} disabled={loading} style={{ flex: 2 }}>
-                {payMethod === 'cod' ? 'Confirm Request (Cash)' : `Pay ₹${totalCost} with Razorpay`}
+            {/* Actions */}
+            <div className="payment-action-buttons">
+              <button
+                type="button"
+                className="btn btn-ghost payment-back-btn"
+                onClick={() => setStep('checkout')}
+                disabled={loading}
+              >
+                <FiArrowLeft size={15} />
+                <span>Back</span>
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary payment-submit-btn"
+                onClick={handlePaymentSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="spinner-inline" /> Processing...
+                  </span>
+                ) : payMethod === 'online' ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <FiLock size={15} /> Pay ₹{totalCost} Online
+                  </span>
+                ) : (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <FiCheck size={16} /> Confirm Cash Order (₹{totalCost})
+                  </span>
+                )}
               </button>
             </div>
           </div>
         )}
 
         {step === 'processing' && (
-          <div style={{ textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+          <div style={{ textAlign: 'center', padding: '50px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
             <div className="spinner" style={{ margin: '0 auto', width: '48px', height: '48px' }} />
-            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--brown-rich)', margin: 0 }}>Processing Rental</h3>
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--brown-rich)', margin: 0 }}>Processing Your Request</h3>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>{processingStatus}</p>
           </div>
         )}
 
         <style>{`
-          .rent-modal-header { margin-bottom: 24px; }
+          .rent-modal-header { margin-bottom: 20px; }
+          .rent-modal-breadcrumbs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+          }
+          .breadcrumb-active { color: var(--copper); }
+          .breadcrumb-done { color: var(--sage); }
+          .breadcrumb-arrow { color: rgba(196,144,106,0.4); font-size: 10px; }
+
           .rent-modal-title {
             font-family: var(--font-serif);
             font-size: var(--text-2xl);
@@ -471,8 +567,11 @@ function RentModal({ book, onClose }) {
           .rent-modal-book {
             font-size: var(--text-sm);
             color: var(--text-muted);
+            font-family: var(--font-serif);
             font-style: italic;
           }
+          .rent-modal-book span { font-style: normal; font-family: var(--font-sans); font-size: 12px; }
+
           .weeks-selector {
             display: flex;
             gap: 8px;
@@ -550,8 +649,279 @@ function RentModal({ book, onClose }) {
             border: 1px solid rgba(201, 168, 76, 0.2);
             color: var(--text-muted);
           }
-          .rent-disclaimer p { font-size: var(--text-xs); line-height: 1.5; }
+          .rent-disclaimer p { font-size: var(--text-xs); line-height: 1.5; margin: 0; }
           .rent-disclaimer svg { flex-shrink: 0; color: var(--gold); margin-top: 1px; }
+
+          /* ================= REDESIGNED PAYMENT STYLES ================= */
+          .payment-checkout-container {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+          }
+
+          .loan-receipt-card {
+            background: linear-gradient(145deg, rgba(251, 247, 240, 0.95), rgba(247, 240, 227, 0.8));
+            border: 1px solid rgba(196, 144, 106, 0.25);
+            border-radius: var(--radius-md);
+            padding: 16px 18px;
+            box-shadow: 0 4px 16px rgba(44, 24, 16, 0.04);
+          }
+
+          .loan-receipt-header {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+          }
+
+          .loan-receipt-thumb {
+            width: 44px;
+            height: 60px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: var(--cream-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(196, 144, 106, 0.2);
+          }
+          .loan-receipt-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+          .loan-receipt-book-info { flex: 1; min-width: 0; }
+          .loan-receipt-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--copper);
+            background: rgba(196, 144, 106, 0.12);
+            padding: 2px 7px;
+            border-radius: var(--radius-full);
+            margin-bottom: 4px;
+          }
+          .loan-receipt-title {
+            font-family: var(--font-serif);
+            font-size: var(--text-base);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 2px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .loan-receipt-author {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin: 0;
+            font-style: italic;
+          }
+
+          .loan-receipt-divider {
+            height: 1px;
+            background: rgba(196, 144, 106, 0.15);
+            margin: 12px 0 10px 0;
+          }
+
+          .loan-receipt-divider-dashed {
+            height: 1px;
+            border-top: 1px dashed rgba(196, 144, 106, 0.3);
+            margin: 8px 0;
+          }
+
+          .loan-receipt-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+          }
+
+          .loan-receipt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+          }
+
+          .loan-receipt-total-row {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding-top: 2px;
+          }
+          .loan-receipt-total-price {
+            font-family: var(--font-serif);
+            font-size: var(--text-xl);
+            font-weight: 700;
+            color: var(--brown-rich);
+          }
+
+          .payment-options-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          }
+          .payment-section-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+          }
+
+          .payment-options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+
+          .payment-method-card {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 1.5px solid rgba(196, 144, 106, 0.2);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+          }
+          .payment-method-card:hover {
+            border-color: var(--copper);
+            background: rgba(255, 248, 238, 1);
+          }
+          .payment-method-selected {
+            border-color: var(--brown-rich) !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 4px 16px rgba(59, 35, 20, 0.08);
+          }
+
+          .payment-card-radio {
+            margin-top: 3px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(196, 144, 106, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all var(--transition-fast);
+          }
+          .payment-method-selected .payment-card-radio {
+            border-color: var(--brown-rich);
+          }
+
+          .radio-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: transparent;
+            transition: all var(--transition-fast);
+          }
+          .radio-dot-active {
+            background: var(--brown-rich);
+          }
+
+          .payment-card-content {
+            flex: 1;
+            min-width: 0;
+          }
+
+          .payment-card-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3px;
+          }
+          .payment-card-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .payment-card-icon {
+            color: var(--copper);
+          }
+          .payment-card-title {
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+          }
+          .payment-tag-instant {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--sage);
+            background: rgba(122, 143, 110, 0.12);
+            padding: 2px 6px;
+            border-radius: var(--radius-full);
+          }
+
+          .payment-card-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0 0 8px 0;
+            line-height: 1.4;
+          }
+
+          .payment-inline-methods {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+          }
+          .mini-pill {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: rgba(196, 144, 106, 0.08);
+            border: 1px solid rgba(196, 144, 106, 0.18);
+            padding: 1px 7px;
+            border-radius: 3px;
+          }
+
+          .payment-security-strip {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            padding: 4px;
+          }
+          .security-icon {
+            color: var(--sage);
+          }
+
+          .payment-action-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 4px;
+          }
+          .payment-back-btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-weight: 500;
+          }
+          .payment-submit-btn {
+            flex: 2;
+            padding: 14px 20px;
+            font-weight: 600;
+            font-size: var(--text-sm);
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 16px rgba(59, 35, 20, 0.2);
+          }
+
+          .spinner-inline {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(247, 240, 227, 0.4);
+            border-top-color: var(--cream);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+          }
         `}</style>
       </motion.div>
     </div>
