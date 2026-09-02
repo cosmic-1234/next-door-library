@@ -225,25 +225,28 @@ function RentModal({ book, onClose }) {
         <div className="rent-modal-header">
           <div className="rent-modal-breadcrumbs">
             <span className={step === 'checkout' ? 'breadcrumb-active' : 'breadcrumb-done'}>
-              1. Delivery & Duration
+              1. Duration & Hub
             </span>
             <span className="breadcrumb-arrow">→</span>
             <span className={step === 'payment' ? 'breadcrumb-active' : ''}>
-              2. Payment & Confirmation
+              2. Review & Payment
             </span>
           </div>
 
           <h2 className="rent-modal-title">
-            {step === 'checkout' ? 'Request to Rent' : 'Complete Your Rental'}
+            {step === 'checkout' ? 'Reserve Your Copy' : 'Complete Your Loan'}
           </h2>
-          <p className="rent-modal-book">"{book.title}" <span>by {book.author}</span></p>
+          <p className="rent-modal-book">
+            <span className="book-title-highlight">"{book.title}"</span>
+            <span className="book-author-text"> by {book.author}</span>
+          </p>
         </div>
 
         {step === 'checkout' && (
           <form onSubmit={handleProceedToPayment}>
             {/* City / Location Selector */}
-            <div className="form-group" style={{ marginBottom: '18px' }}>
-              <label className="form-label">Rental City / Campus</label>
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label className="form-label" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Library Hub Location</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {['Nagpur', 'IIM Udaipur'].map(loc => {
                   const isAvailableHere = !book.availableLocations || book.availableLocations.length === 0 || book.availableLocations.includes(loc);
@@ -255,11 +258,11 @@ function RentModal({ book, onClose }) {
                       disabled={!isAvailableHere}
                       className={`delivery-option ${isSelected ? 'delivery-option-active' : ''}`}
                       onClick={() => { setLocation(loc); setArea(''); }}
-                      style={{ padding: '10px 12px', justifyContent: 'center', opacity: !isAvailableHere ? 0.5 : 1 }}
+                      style={{ padding: '9px 12px', justifyContent: 'center', opacity: !isAvailableHere ? 0.45 : 1 }}
                     >
-                      <FiMapPin size={15} style={{ color: isSelected ? 'var(--brown-rich)' : 'var(--copper)' }} />
+                      <FiMapPin size={14} style={{ color: isSelected ? 'var(--brown-rich)' : 'var(--copper)' }} />
                       <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>{loc}</span>
-                      {!isAvailableHere && <span style={{ fontSize: '10px', color: 'var(--dusty-rose)' }}>(Unavailable)</span>}
+                      {!isAvailableHere && <span style={{ fontSize: '10px', color: 'var(--dusty-rose)' }}>(Out of stock)</span>}
                     </button>
                   );
                 })}
@@ -267,10 +270,10 @@ function RentModal({ book, onClose }) {
             </div>
 
             {/* Duration */}
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label className="form-label" style={{ marginBottom: 0 }}>Duration (weeks)</label>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label className="form-label" style={{ marginBottom: 0, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Loan Duration</label>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                   Allowed: {book.allowedRentalWeeks && book.allowedRentalWeeks.length > 0 ? `${book.allowedRentalWeeks.join(', ')} wks` : `${book.minRentalWeeks || 1}–${book.maxRentalWeeks || 8} wks`}
                 </span>
               </div>
@@ -291,29 +294,29 @@ function RentModal({ book, onClose }) {
             {/* Cost Summary */}
             <div className="rent-summary">
               <div className="rent-summary-row">
-                <span>₹{book.pricePerWeek} × {weeks} week{weeks > 1 ? 's' : ''}</span>
+                <span style={{ fontSize: '13px' }}>Rental Rate (₹{book.pricePerWeek}/wk × {weeks} wk{weeks > 1 ? 's' : ''})</span>
                 <span className="rent-summary-total">₹{totalCost}</span>
               </div>
-              <div className="rent-summary-row" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                <span>Due date</span>
-                <span>{dueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              <div className="rent-summary-row" style={{ fontSize: '11px', color: 'var(--text-muted)', paddingTop: '4px', borderTop: '1px dashed rgba(196,144,106,0.25)' }}>
+                <span>Return Due Date</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{dueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               </div>
             </div>
 
-            {/* Delivery */}
-            <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label className="form-label">How would you like to receive the book?</label>
+            {/* Delivery Option */}
+            <div className="form-group" style={{ marginBottom: '14px' }}>
+              <label className="form-label" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Collection Method</label>
               <div className="delivery-options">
                 <button
                   type="button"
                   className={`delivery-option ${deliveryType === 'pickup' ? 'delivery-option-active' : ''}`}
                   onClick={() => setDeliveryType('pickup')}
                 >
-                  <FiMapPin size={18} />
+                  <FiMapPin size={16} style={{ color: 'var(--copper)', flexShrink: 0 }} />
                   <div>
                     <div className="delivery-option-title">Self Pickup</div>
                     <div className="delivery-option-desc">
-                      {location === 'IIM Udaipur' ? 'Balicha Campus library hub point' : 'Coordinate via admin@nextdoorlibrary.in'}
+                      {location === 'IIM Udaipur' ? 'Balicha Campus library shelf' : 'Nagpur neighborhood hub'}
                     </div>
                   </div>
                 </button>
@@ -322,11 +325,11 @@ function RentModal({ book, onClose }) {
                   className={`delivery-option ${deliveryType === 'delivery' ? 'delivery-option-active' : ''}`}
                   onClick={() => setDeliveryType('delivery')}
                 >
-                  <FiTruck size={18} />
+                  <FiTruck size={16} style={{ color: 'var(--copper)', flexShrink: 0 }} />
                   <div>
                     <div className="delivery-option-title">Doorstep Delivery</div>
                     <div className="delivery-option-desc">
-                      {location === 'IIM Udaipur' ? 'Hostel / Faculty / Balicha delivery' : 'Within Nagpur city'}
+                      {location === 'IIM Udaipur' ? 'Hostel / Faculty block' : 'Direct to your door'}
                     </div>
                   </div>
                 </button>
@@ -340,18 +343,18 @@ function RentModal({ book, onClose }) {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  style={{ overflow: 'hidden', marginBottom: '16px' }}
+                  style={{ overflow: 'hidden', marginBottom: '14px' }}
                 >
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div className="form-group">
-                      <label className="form-label">{location === 'IIM Udaipur' ? 'Campus Block / Area' : 'Area / Locality'}</label>
+                      <label className="form-label">{location === 'IIM Udaipur' ? 'Campus Block / Hostel' : 'Area / Locality'}</label>
                       <select className="form-input form-select" value={area} onChange={e => setArea(e.target.value)} required>
-                        <option value="">{location === 'IIM Udaipur' ? 'Select campus area' : 'Select area'}</option>
+                        <option value="">{location === 'IIM Udaipur' ? 'Select block' : 'Select area'}</option>
                         {areaList.map(a => <option key={a} value={a}>{a}</option>)}
                       </select>
                     </div>
                     <div className="form-group">
-                      <label className="form-label">{location === 'IIM Udaipur' ? 'Room / Hostel No.' : 'Pincode'}</label>
+                      <label className="form-label">{location === 'IIM Udaipur' ? 'Room / Flat No.' : 'Pincode'}</label>
                       <input
                         className="form-input"
                         placeholder={location === 'IIM Udaipur' ? 'e.g. H2-304' : 'e.g. 440010'}
@@ -365,26 +368,8 @@ function RentModal({ book, onClose }) {
               )}
             </AnimatePresence>
 
-            {/* Note */}
-            <div className="form-group" style={{ marginBottom: '24px' }}>
-              <label className="form-label">Message (optional)</label>
-              <textarea
-                className="form-input form-textarea"
-                placeholder="Any special requests or questions..."
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                rows={2}
-                style={{ minHeight: '70px' }}
-              />
-            </div>
-
-            <div className="rent-disclaimer">
-              <FiAlertTriangle size={14} />
-              <p>We'll coordinate with you via email (admin@nextdoorlibrary.in). Review payment options on the next step.</p>
-            </div>
-
-            <button type="submit" className="btn btn-primary w-full btn-lg" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <span>Continue to Payment</span>
+            <button type="submit" className="btn btn-primary w-full btn-lg" style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <span>Proceed to Review & Pay</span>
               <FiArrowRight size={16} />
             </button>
           </form>
@@ -392,99 +377,98 @@ function RentModal({ book, onClose }) {
 
         {step === 'payment' && (
           <div className="payment-checkout-container">
-            {/* Book & Rental Snapshot Card */}
-            <div className="loan-receipt-card">
-              <div className="loan-receipt-header">
-                <div className="loan-receipt-thumb">
+            {/* Elegant Library Loan Ticket */}
+            <div className="loan-ticket">
+              <div className="loan-ticket-top">
+                <div className="loan-ticket-cover">
                   {book.cover ? (
                     <img src={getCoverUrl(book.cover)} alt="" />
                   ) : (
-                    <FiBookOpen size={20} />
+                    <FiBookOpen size={20} color="var(--copper)" />
                   )}
                 </div>
-                <div className="loan-receipt-book-info">
-                  <div className="loan-receipt-badge">
-                    {weeks} Week{weeks > 1 ? 's' : ''} Loan • {location}
+                <div className="loan-ticket-info">
+                  <div className="loan-ticket-meta">
+                    <span className="loan-duration-tag">{weeks} Weeks Loan</span>
+                    <span className="loan-hub-tag">{location}</span>
                   </div>
-                  <h4 className="loan-receipt-title">{book.title}</h4>
-                  <p className="loan-receipt-author">by {book.author}</p>
+                  <h4 className="loan-ticket-title">{book.title}</h4>
+                  <p className="loan-ticket-author">by {book.author}</p>
                 </div>
               </div>
 
-              <div className="loan-receipt-divider" />
+              <div className="loan-ticket-perforation" />
 
-              <div className="loan-receipt-details">
-                <div className="loan-receipt-row">
-                  <span>Rental Rate</span>
-                  <span>₹{book.pricePerWeek} × {weeks} week{weeks > 1 ? 's' : ''}</span>
+              <div className="loan-ticket-details">
+                <div className="loan-detail-row">
+                  <span className="detail-label">Rental Duration</span>
+                  <span className="detail-val">₹{book.pricePerWeek} × {weeks} wks</span>
                 </div>
-                <div className="loan-receipt-row">
-                  <span>Fulfillment</span>
-                  <span>{deliveryType === 'delivery' ? `Delivery to ${area || 'Nagpur'}` : 'Self Pickup at Hub'}</span>
+                <div className="loan-detail-row">
+                  <span className="detail-label">Fulfillment</span>
+                  <span className="detail-val">{deliveryType === 'delivery' ? `Delivery (${area || 'Nagpur'})` : 'Self Pickup at Hub'}</span>
                 </div>
-                <div className="loan-receipt-row">
-                  <span>Security Deposit</span>
-                  <span style={{ color: 'var(--sage)', fontWeight: 600 }}>₹0 (Community Trust)</span>
+                <div className="loan-detail-row">
+                  <span className="detail-label">Deposit (Honor Trust)</span>
+                  <span className="detail-val" style={{ color: 'var(--sage)', fontWeight: 600 }}>₹0 Free</span>
                 </div>
-                <div className="loan-receipt-divider-dashed" />
-                <div className="loan-receipt-row loan-receipt-total-row">
-                  <span>Total Amount Payable</span>
-                  <span className="loan-receipt-total-price">₹{totalCost}</span>
+
+                <div className="loan-total-divider" />
+
+                <div className="loan-detail-row loan-total-row">
+                  <span className="total-label">Total Payable</span>
+                  <div className="total-price-wrap">
+                    <span className="total-currency">₹</span>
+                    <span className="total-amount">{totalCost}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Payment Method Selector */}
-            <div className="payment-options-section">
-              <label className="payment-section-label">Choose Payment Method</label>
+            <div className="payment-method-selector-wrap">
+              <div className="payment-selector-title">Select Payment Mode</div>
 
-              <div className="payment-options-list">
-                {/* Option 1: Razorpay Online */}
+              <div className="payment-cards-group">
+                {/* Pay Online Card */}
                 <div
-                  className={`payment-method-card ${payMethod === 'online' ? 'payment-method-selected' : ''}`}
+                  className={`payment-option-card ${payMethod === 'online' ? 'payment-option-active' : ''}`}
                   onClick={() => setPayMethod('online')}
                 >
-                  <div className="payment-card-radio">
-                    <div className={`radio-dot ${payMethod === 'online' ? 'radio-dot-active' : ''}`} />
+                  <div className="payment-option-radio">
+                    <div className={`radio-indicator ${payMethod === 'online' ? 'radio-indicator-active' : ''}`} />
                   </div>
-                  <div className="payment-card-content">
-                    <div className="payment-card-title-row">
-                      <div className="payment-card-title-wrap">
-                        <FiCreditCard size={18} className="payment-card-icon" />
-                        <span className="payment-card-title">Pay Online</span>
+                  <div className="payment-option-body">
+                    <div className="payment-option-header">
+                      <div className="option-title-wrap">
+                        <FiCreditCard size={16} className="option-icon" />
+                        <span className="option-title">Pay Online</span>
                       </div>
-                      <span className="payment-tag-instant">Instant Confirmation</span>
+                      <span className="badge-instant">⚡ Instant Pass</span>
                     </div>
-                    <p className="payment-card-desc">
-                      Pay instantly with UPI (GPay, PhonePe, Paytm), Debit/Credit Cards, or NetBanking.
+                    <p className="option-desc">
+                      UPI (GPay, PhonePe, Paytm), Debit/Credit Cards & NetBanking
                     </p>
-                    <div className="payment-inline-methods">
-                      <span className="mini-pill">UPI</span>
-                      <span className="mini-pill">GPay</span>
-                      <span className="mini-pill">PhonePe</span>
-                      <span className="mini-pill">Cards</span>
-                      <span className="mini-pill">NetBanking</span>
-                    </div>
                   </div>
                 </div>
 
-                {/* Option 2: Cash on Delivery */}
+                {/* Cash on Delivery Card */}
                 <div
-                  className={`payment-method-card ${payMethod === 'cod' ? 'payment-method-selected' : ''}`}
+                  className={`payment-option-card ${payMethod === 'cod' ? 'payment-option-active' : ''}`}
                   onClick={() => setPayMethod('cod')}
                 >
-                  <div className="payment-card-radio">
-                    <div className={`radio-dot ${payMethod === 'cod' ? 'radio-dot-active' : ''}`} />
+                  <div className="payment-option-radio">
+                    <div className={`radio-indicator ${payMethod === 'cod' ? 'radio-indicator-active' : ''}`} />
                   </div>
-                  <div className="payment-card-content">
-                    <div className="payment-card-title-row">
-                      <div className="payment-card-title-wrap">
-                        <FiDollarSign size={18} className="payment-card-icon" />
-                        <span className="payment-card-title">Cash on Delivery / Collection</span>
+                  <div className="payment-option-body">
+                    <div className="payment-option-header">
+                      <div className="option-title-wrap">
+                        <FiDollarSign size={16} className="option-icon" />
+                        <span className="option-title">Pay Cash on Delivery / Collection</span>
                       </div>
                     </div>
-                    <p className="payment-card-desc">
-                      Pay ₹{totalCost} in cash when you pick up or receive the book at your doorstep.
+                    <p className="option-desc">
+                      Pay ₹{totalCost} directly upon picking up or receiving the book
                     </p>
                   </div>
                 </div>
@@ -492,25 +476,25 @@ function RentModal({ book, onClose }) {
             </div>
 
             {/* Security Guarantee Strip */}
-            <div className="payment-security-strip">
-              <FiShield size={14} className="security-icon" />
-              <span>256-Bit SSL Encrypted • Powered by Razorpay Banking Gateway</span>
+            <div className="payment-trust-footer">
+              <FiShield size={13} className="trust-icon" />
+              <span>256-Bit SSL Encrypted • Verified Razorpay Gateway</span>
             </div>
 
-            {/* Actions */}
-            <div className="payment-action-buttons">
+            {/* Action Buttons */}
+            <div className="payment-actions-bar">
               <button
                 type="button"
-                className="btn btn-ghost payment-back-btn"
+                className="btn btn-secondary btn-back"
                 onClick={() => setStep('checkout')}
                 disabled={loading}
               >
-                <FiArrowLeft size={15} />
+                <FiArrowLeft size={14} />
                 <span>Back</span>
               </button>
               <button
                 type="button"
-                className="btn btn-primary payment-submit-btn"
+                className="btn btn-primary btn-pay-now"
                 onClick={handlePaymentSubmit}
                 disabled={loading}
               >
@@ -520,11 +504,11 @@ function RentModal({ book, onClose }) {
                   </span>
                 ) : payMethod === 'online' ? (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                    <FiLock size={15} /> Pay ₹{totalCost} Online
+                    <FiLock size={14} /> Pay ₹{totalCost} Online
                   </span>
                 ) : (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                    <FiCheck size={16} /> Confirm Cash Order (₹{totalCost})
+                    <FiCheck size={15} /> Confirm Loan (₹{totalCost})
                   </span>
                 )}
               </button>
@@ -533,57 +517,67 @@ function RentModal({ book, onClose }) {
         )}
 
         {step === 'processing' && (
-          <div style={{ textAlign: 'center', padding: '50px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-            <div className="spinner" style={{ margin: '0 auto', width: '48px', height: '48px' }} />
-            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--brown-rich)', margin: 0 }}>Processing Your Request</h3>
+          <div style={{ textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+            <div className="spinner" style={{ margin: '0 auto', width: '44px', height: '44px' }} />
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--brown-rich)', margin: 0 }}>Securing Your Book</h3>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>{processingStatus}</p>
           </div>
         )}
 
         <style>{`
-          .rent-modal-header { margin-bottom: 20px; }
+          .rent-modal-header { margin-bottom: 16px; }
           .rent-modal-breadcrumbs {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 11px;
+            gap: 6px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: var(--text-muted);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
           }
           .breadcrumb-active { color: var(--copper); }
           .breadcrumb-done { color: var(--sage); }
-          .breadcrumb-arrow { color: rgba(196,144,106,0.4); font-size: 10px; }
+          .breadcrumb-arrow { color: rgba(196,144,106,0.4); font-size: 9px; }
 
           .rent-modal-title {
             font-family: var(--font-serif);
-            font-size: var(--text-2xl);
+            font-size: 1.55rem;
             font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            letter-spacing: -0.01em;
           }
           .rent-modal-book {
-            font-size: var(--text-sm);
+            font-size: 13px;
             color: var(--text-muted);
+            margin: 0;
+          }
+          .book-title-highlight {
             font-family: var(--font-serif);
             font-style: italic;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: capitalize;
           }
-          .rent-modal-book span { font-style: normal; font-family: var(--font-sans); font-size: 12px; }
+          .book-author-text {
+            font-size: 11px;
+          }
 
           .weeks-selector {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
           }
           .week-btn {
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: var(--radius-full);
-            border: 1.5px solid rgba(196, 144, 106, 0.3);
-            font-size: var(--text-sm);
-            font-weight: 500;
+            border: 1.5px solid rgba(196, 144, 106, 0.25);
+            font-size: 12px;
+            font-weight: 600;
             color: var(--text-secondary);
+            background: transparent;
             transition: all var(--transition-fast);
           }
           .week-btn:hover { border-color: var(--copper); color: var(--copper); }
@@ -592,90 +586,84 @@ function RentModal({ book, onClose }) {
             border-color: var(--brown-rich) !important;
             color: var(--cream) !important;
           }
+
           .rent-summary {
-            background: rgba(196, 144, 106, 0.08);
-            border: 1px solid rgba(196, 144, 106, 0.2);
+            background: rgba(196, 144, 106, 0.07);
+            border: 1px solid rgba(196, 144, 106, 0.18);
             border-radius: var(--radius-md);
-            padding: 16px;
-            margin-bottom: 20px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
           }
           .rent-summary-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: var(--text-sm);
+            font-size: 12px;
             color: var(--text-secondary);
           }
           .rent-summary-total {
             font-family: var(--font-serif);
-            font-size: var(--text-xl);
+            font-size: 1.25rem;
             font-weight: 700;
             color: var(--brown-rich);
           }
+
           .delivery-options {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
           }
           .delivery-option {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 14px;
+            gap: 8px;
+            padding: 10px 12px;
             border-radius: var(--radius-md);
             border: 1.5px solid rgba(196, 144, 106, 0.2);
             text-align: left;
             transition: all var(--transition-fast);
             color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.5);
           }
-          .delivery-option:hover { border-color: var(--copper); }
+          .delivery-option:hover { border-color: var(--copper); background: rgba(255, 255, 255, 0.85); }
           .delivery-option-active {
             border-color: var(--brown-rich) !important;
-            background: rgba(59, 35, 20, 0.05) !important;
+            background: rgba(255, 255, 255, 0.95) !important;
             color: var(--brown-rich) !important;
+            box-shadow: 0 2px 8px rgba(59,35,20,0.06);
           }
-          .delivery-option-title { font-size: var(--text-sm); font-weight: 500; margin-bottom: 2px; }
-          .delivery-option-desc { font-size: var(--text-xs); color: var(--text-muted); }
-          .rent-disclaimer {
-            display: flex;
-            gap: 8px;
-            align-items: flex-start;
-            padding: 12px;
-            background: rgba(201, 168, 76, 0.08);
-            border-radius: var(--radius-md);
-            border: 1px solid rgba(201, 168, 76, 0.2);
-            color: var(--text-muted);
-          }
-          .rent-disclaimer p { font-size: var(--text-xs); line-height: 1.5; margin: 0; }
-          .rent-disclaimer svg { flex-shrink: 0; color: var(--gold); margin-top: 1px; }
+          .delivery-option-title { font-size: 12px; font-weight: 600; margin-bottom: 1px; }
+          .delivery-option-desc { font-size: 10px; color: var(--text-muted); line-height: 1.3; }
 
-          /* ================= REDESIGNED PAYMENT STYLES ================= */
+          /* ================= BESPOKE PAYMENT STYLES ================= */
           .payment-checkout-container {
             display: flex;
             flex-direction: column;
-            gap: 18px;
-          }
-
-          .loan-receipt-card {
-            background: linear-gradient(145deg, rgba(251, 247, 240, 0.95), rgba(247, 240, 227, 0.8));
-            border: 1px solid rgba(196, 144, 106, 0.25);
-            border-radius: var(--radius-md);
-            padding: 16px 18px;
-            box-shadow: 0 4px 16px rgba(44, 24, 16, 0.04);
-          }
-
-          .loan-receipt-header {
-            display: flex;
             gap: 14px;
+          }
+
+          /* Vintage Loan Slip Ticket */
+          .loan-ticket {
+            background: linear-gradient(140deg, rgba(255, 252, 247, 0.98), rgba(247, 240, 227, 0.9));
+            border: 1px solid rgba(196, 144, 106, 0.28);
+            border-radius: 12px;
+            padding: 14px 16px;
+            box-shadow: 0 4px 14px rgba(44, 24, 16, 0.04);
+            position: relative;
+          }
+
+          .loan-ticket-top {
+            display: flex;
+            gap: 12px;
             align-items: center;
           }
 
-          .loan-receipt-thumb {
-            width: 44px;
-            height: 60px;
+          .loan-ticket-cover {
+            width: 42px;
+            height: 58px;
             border-radius: 4px;
             overflow: hidden;
             background: var(--cream-dark);
@@ -683,239 +671,250 @@ function RentModal({ book, onClose }) {
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(196, 144, 106, 0.2);
+            box-shadow: 0 3px 10px rgba(44, 24, 16, 0.15);
+            border: 1px solid rgba(196, 144, 106, 0.25);
           }
-          .loan-receipt-thumb img { width: 100%; height: 100%; object-fit: cover; }
+          .loan-ticket-cover img { width: 100%; height: 100%; object-fit: cover; }
 
-          .loan-receipt-book-info { flex: 1; min-width: 0; }
-          .loan-receipt-badge {
-            display: inline-block;
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--copper);
-            background: rgba(196, 144, 106, 0.12);
-            padding: 2px 7px;
-            border-radius: var(--radius-full);
-            margin-bottom: 4px;
+          .loan-ticket-info { flex: 1; min-width: 0; }
+          .loan-ticket-meta {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 3px;
           }
-          .loan-receipt-title {
+          .loan-duration-tag {
+            font-size: 9.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--copper);
+            background: rgba(196, 144, 106, 0.14);
+            padding: 1px 6px;
+            border-radius: 4px;
+          }
+          .loan-hub-tag {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-muted);
+          }
+          .loan-ticket-title {
             font-family: var(--font-serif);
-            font-size: var(--text-base);
+            font-size: 15px;
             font-weight: 600;
             color: var(--text-primary);
-            margin: 0 0 2px 0;
+            margin: 0 0 1px 0;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            text-transform: capitalize;
           }
-          .loan-receipt-author {
+          .loan-ticket-author {
             font-size: 11px;
             color: var(--text-muted);
             margin: 0;
             font-style: italic;
           }
 
-          .loan-receipt-divider {
+          .loan-ticket-perforation {
+            height: 1px;
+            border-top: 1px dashed rgba(196, 144, 106, 0.25);
+            margin: 10px 0 8px 0;
+          }
+
+          .loan-ticket-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+
+          .loan-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11.5px;
+          }
+          .detail-label { color: var(--text-muted); }
+          .detail-val { color: var(--text-secondary); font-weight: 500; }
+
+          .loan-total-divider {
             height: 1px;
             background: rgba(196, 144, 106, 0.15);
-            margin: 12px 0 10px 0;
+            margin: 4px 0;
           }
 
-          .loan-receipt-divider-dashed {
-            height: 1px;
-            border-top: 1px dashed rgba(196, 144, 106, 0.3);
-            margin: 8px 0;
+          .loan-total-row {
+            padding-top: 2px;
+          }
+          .total-label {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-primary);
+          }
+          .total-price-wrap {
+            display: flex;
+            align-items: baseline;
+            gap: 2px;
+          }
+          .total-currency {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--brown-rich);
+          }
+          .total-amount {
+            font-family: var(--font-serif);
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--brown-rich);
+            letter-spacing: -0.02em;
           }
 
-          .loan-receipt-details {
+          /* Payment Selector Group */
+          .payment-method-selector-wrap {
             display: flex;
             flex-direction: column;
             gap: 6px;
           }
-
-          .loan-receipt-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            color: var(--text-secondary);
-          }
-
-          .loan-receipt-total-row {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-            padding-top: 2px;
-          }
-          .loan-receipt-total-price {
-            font-family: var(--font-serif);
-            font-size: var(--text-xl);
+          .payment-selector-title {
+            font-size: 10.5px;
             font-weight: 700;
-            color: var(--brown-rich);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-muted);
           }
-
-          .payment-options-section {
+          .payment-cards-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
           }
-          .payment-section-label {
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-          }
 
-          .payment-options-list {
+          .payment-option-card {
             display: flex;
-            flex-direction: column;
             gap: 10px;
-          }
-
-          .payment-method-card {
-            display: flex;
-            gap: 12px;
             align-items: flex-start;
-            padding: 14px 16px;
-            background: var(--bg-card);
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.6);
             border: 1.5px solid rgba(196, 144, 106, 0.2);
-            border-radius: var(--radius-md);
+            border-radius: 10px;
             cursor: pointer;
             transition: all var(--transition-fast);
           }
-          .payment-method-card:hover {
+          .payment-option-card:hover {
             border-color: var(--copper);
-            background: rgba(255, 248, 238, 1);
+            background: rgba(255, 255, 255, 0.95);
           }
-          .payment-method-selected {
+          .payment-option-active {
             border-color: var(--brown-rich) !important;
-            background: rgba(255, 255, 255, 0.9) !important;
-            box-shadow: 0 4px 16px rgba(59, 35, 20, 0.08);
+            background: #FFFFFF !important;
+            box-shadow: 0 4px 14px rgba(59, 35, 20, 0.07);
           }
 
-          .payment-card-radio {
-            margin-top: 3px;
-            width: 18px;
-            height: 18px;
+          .payment-option-radio {
+            margin-top: 2px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            border: 1.5px solid rgba(196, 144, 106, 0.5);
+            border: 1.5px solid rgba(196, 144, 106, 0.45);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            transition: all var(--transition-fast);
           }
-          .payment-method-selected .payment-card-radio {
+          .payment-option-active .payment-option-radio {
             border-color: var(--brown-rich);
           }
-
-          .radio-dot {
-            width: 9px;
-            height: 9px;
+          .radio-indicator {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: transparent;
             transition: all var(--transition-fast);
           }
-          .radio-dot-active {
+          .radio-indicator-active {
             background: var(--brown-rich);
           }
 
-          .payment-card-content {
-            flex: 1;
-            min-width: 0;
-          }
-
-          .payment-card-title-row {
+          .payment-option-body { flex: 1; min-width: 0; }
+          .payment-option-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
           }
-          .payment-card-title-wrap {
+          .option-title-wrap {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
           }
-          .payment-card-icon {
-            color: var(--copper);
-          }
-          .payment-card-title {
-            font-size: var(--text-sm);
+          .option-icon { color: var(--copper); }
+          .option-title {
+            font-size: 13px;
             font-weight: 600;
             color: var(--text-primary);
           }
-          .payment-tag-instant {
-            font-size: 10px;
+          .badge-instant {
+            font-size: 9.5px;
             font-weight: 600;
             color: var(--sage);
             background: rgba(122, 143, 110, 0.12);
-            padding: 2px 6px;
-            border-radius: var(--radius-full);
+            padding: 1px 6px;
+            border-radius: 4px;
           }
-
-          .payment-card-desc {
-            font-size: 12px;
+          .option-desc {
+            font-size: 11px;
             color: var(--text-muted);
-            margin: 0 0 8px 0;
-            line-height: 1.4;
+            margin: 0;
+            line-height: 1.35;
           }
 
-          .payment-inline-methods {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-          }
-          .mini-pill {
-            font-size: 10px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            background: rgba(196, 144, 106, 0.08);
-            border: 1px solid rgba(196, 144, 106, 0.18);
-            padding: 1px 7px;
-            border-radius: 3px;
-          }
-
-          .payment-security-strip {
+          /* Trust Footer */
+          .payment-trust-footer {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            font-size: 11px;
+            font-size: 10.5px;
             color: var(--text-muted);
-            padding: 4px;
           }
-          .security-icon {
-            color: var(--sage);
-          }
+          .trust-icon { color: var(--sage); }
 
-          .payment-action-buttons {
+          /* Action Buttons */
+          .payment-actions-bar {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
-            margin-top: 4px;
           }
-          .payment-back-btn {
+          .btn-back {
             flex: 1;
+            padding: 11px 16px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
+            font-size: 13px;
             font-weight: 500;
+            border-radius: 8px;
+            background: rgba(196,144,106,0.12);
+            border: 1px solid rgba(196,144,106,0.25);
+            color: var(--text-secondary);
           }
-          .payment-submit-btn {
+          .btn-back:hover {
+            background: rgba(196,144,106,0.2);
+            color: var(--text-primary);
+          }
+          .btn-pay-now {
             flex: 2;
-            padding: 14px 20px;
+            padding: 12px 20px;
+            font-size: 13.5px;
             font-weight: 600;
-            font-size: var(--text-sm);
-            letter-spacing: 0.02em;
-            box-shadow: 0 4px 16px rgba(59, 35, 20, 0.2);
+            border-radius: 8px;
+            letter-spacing: 0.01em;
+            box-shadow: 0 4px 14px rgba(59, 35, 20, 0.18);
           }
 
           .spinner-inline {
-            width: 14px;
-            height: 14px;
+            width: 13px;
+            height: 13px;
             border: 2px solid rgba(247, 240, 227, 0.4);
             border-top-color: var(--cream);
             border-radius: 50%;
