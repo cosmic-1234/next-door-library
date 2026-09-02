@@ -48,9 +48,10 @@ export default function BookCard({ book, delay = 0 }) {
             </div>
           )}
 
-          {/* Overlay on hover */}
+          {/* Overlay on hover — quick peek */}
           <div className="book-card-overlay">
-            <span className="book-card-overlay-text">View Book</span>
+            <p className="book-card-peek">{book.description || 'A quiet story waiting for its next reader.'}</p>
+            <span className="book-card-overlay-text">View Book →</span>
           </div>
 
           {/* Badges */}
@@ -168,25 +169,48 @@ export default function BookCard({ book, delay = 0 }) {
         .book-card-overlay {
           position: absolute;
           inset: 0;
-          background: rgba(44, 24, 16, 0.6);
+          background: linear-gradient(to top, rgba(44, 24, 16, 0.94) 0%, rgba(44, 24, 16, 0.6) 42%, rgba(44, 24, 16, 0.04) 100%);
           display: flex;
-          align-items: center;
-          justify-content: center;
+          flex-direction: column;
+          justify-content: flex-end;
+          gap: 12px;
+          padding: 18px 16px;
           opacity: 0;
-          transition: opacity 0.3s ease;
+          transition: opacity 0.28s ease;
         }
 
         .book-card:hover .book-card-overlay { opacity: 1; }
 
-        .book-card-overlay-text {
-          color: var(--cream);
-          font-size: var(--text-sm);
-          font-weight: 500;
-          letter-spacing: 0.08em;
-          border: 1.5px solid rgba(247, 240, 227, 0.6);
-          padding: 8px 20px;
-          border-radius: var(--radius-full);
+        .book-card-peek {
+          color: rgba(247, 240, 227, 0.92);
+          font-family: var(--font-serif);
+          font-size: 13px;
+          line-height: 1.5;
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          opacity: 0;
+          transform: translateY(10px);
+          transition: opacity 0.3s ease 0.05s, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
         }
+        .book-card:hover .book-card-peek { opacity: 1; transform: translateY(0); }
+
+        .book-card-overlay-text {
+          align-self: flex-start;
+          color: var(--cream);
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          border: 1.5px solid rgba(247, 240, 227, 0.55);
+          padding: 7px 16px;
+          border-radius: var(--radius-full);
+          opacity: 0;
+          transform: translateY(10px);
+          transition: opacity 0.3s ease 0.1s, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, background 0.2s ease, color 0.2s ease;
+        }
+        .book-card:hover .book-card-overlay-text { opacity: 1; transform: translateY(0); }
+        .book-card-overlay-text:hover { background: var(--cream); color: var(--brown-deep); }
 
         .book-card-badges {
           position: absolute;

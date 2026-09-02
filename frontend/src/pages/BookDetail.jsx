@@ -938,6 +938,7 @@ export default function BookDetail() {
   const [loading, setLoading] = useState(true);
   const [rentModalOpen, setRentModalOpen] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
+  const [heartBurst, setHeartBurst] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
   const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', body: '', hasSpoilers: false });
@@ -987,6 +988,7 @@ export default function BookDetail() {
     try {
       const res = await api.post(`/books/${id}/wishlist`);
       setWishlisted(res.data.wishlisted);
+      if (res.data.wishlisted) setHeartBurst((b) => b + 1);
       toast.success(res.data.wishlisted ? 'Added to wishlist' : 'Removed from wishlist');
     } catch { toast.error('Failed to update wishlist'); }
   };
@@ -1164,9 +1166,40 @@ export default function BookDetail() {
                     </span>
                   ) : 'Currently on Loan'}
                 </button>
-                <button className={`btn btn-ghost wishlist-btn ${wishlisted ? 'wishlisted' : ''}`} onClick={handleWishlist} id="wishlist-btn">
-                  <FiHeart size={18} fill={wishlisted ? 'currentColor' : 'none'} />
+                <button className={`btn btn-ghost wishlist-btn ${wishlisted ? 'wishlisted' : ''}`} onClick={handleWishlist} id="wishlist-btn" style={{ position: 'relative' }}>
+                  <motion.span
+                    style={{ display: 'inline-flex' }}
+                    animate={wishlisted ? { scale: [1, 1.55, 0.85, 1.18, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.5, ease: 'easeOut', times: [0, 0.3, 0.5, 0.75, 1] }}
+                  >
+                    <FiHeart size={18} fill={wishlisted ? 'currentColor' : 'none'} />
+                  </motion.span>
                   {wishlisted ? 'Wishlisted' : 'Wishlist'}
+                  <AnimatePresence>
+                    {heartBurst > 0 && (
+                      <span key={heartBurst} className="heart-burst" aria-hidden="true">
+                        {[...Array(6)].map((_, i) => {
+                          const angle = (i / 6) * Math.PI * 2;
+                          return (
+                            <motion.span
+                              key={i}
+                              className="heart-particle"
+                              initial={{ opacity: 0, scale: 0.3, x: 0, y: 0 }}
+                              animate={{
+                                opacity: [0, 1, 0],
+                                scale: [0.3, 1, 0.6],
+                                x: Math.cos(angle) * 34,
+                                y: Math.sin(angle) * 34 - 6,
+                              }}
+                              transition={{ duration: 0.65, ease: 'easeOut' }}
+                            >
+                              <FiHeart size={11} fill="currentColor" />
+                            </motion.span>
+                          );
+                        })}
+                      </span>
+                    )}
+                  </AnimatePresence>
                 </button>
               </div>
 
@@ -1449,6 +1482,21 @@ export default function BookDetail() {
         .book-detail-actions { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
         .wishlist-btn { color: var(--dusty-rose); }
         .wishlisted { background: rgba(201,137,122,0.1) !important; border-color: var(--dusty-rose) !important; }
+        .heart-burst {
+          position: absolute;
+          top: 50%;
+          left: 22px;
+          width: 0;
+          height: 0;
+          pointer-events: none;
+        }
+        .heart-particle {
+          position: absolute;
+          top: 0;
+          left: 0;
+          color: var(--dusty-rose);
+          display: inline-flex;
+        }
         .unavailable-btn { opacity: 0.6; cursor: not-allowed; }
         .unavailable-note { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
         .book-detail-delivery-note {

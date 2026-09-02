@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiFilter, FiX, FiChevronLeft, FiChevronRight, FiBookOpen, FiMapPin } from 'react-icons/fi';
 import api from '../api/axios';
 import BookCard from '../components/BookCard';
+import { getCoverUrl } from '../utils/imageUrl';
 
 const GENRES = ['Fiction', 'Non-Fiction', 'Mystery', 'Romance', 'Fantasy', 'Science Fiction', 'Biography', 'Self-Help', 'History', 'Children', 'Young Adult', 'Thriller', 'Literary Fiction', 'Philosophy', 'Psychology', 'Business', 'Poetry', 'Other'];
 const LANGUAGES = ['English', 'Hindi', 'Marathi'];
@@ -20,12 +21,15 @@ const SORT_OPTIONS = [
 
 export default function Catalogue() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialLoc = searchParams.get('location') || localStorage.getItem('ndl_selected_location') || '';
 
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
@@ -55,6 +59,19 @@ export default function Catalogue() {
   // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(filters.search), 500);
+    return () => clearTimeout(t);
+  }, [filters.search]);
+
+  // Live search suggestions (quick, title matches)
+  useEffect(() => {
+    const q = filters.search.trim();
+    if (q.length < 2) { setSuggestions([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.get(`/books?search=${encodeURIComponent(q)}&limit=6`);
+        setSuggestions(res.data.books || []);
+      } catch { setSuggestions([]); }
+    }, 220);
     return () => clearTimeout(t);
   }, [filters.search]);
 
@@ -159,6 +176,9 @@ export default function Catalogue() {
                 placeholder="Search by title, author, or description..."
                 value={filters.search}
                 onChange={(e) => updateFilter('search', e.target.value)}
+                onFocus={() => setSuggestOpen(true)}
+                onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+                autoComplete="off"
                 id="catalogue-search-input"
               />
               {filters.search && (
@@ -166,6 +186,39 @@ export default function Catalogue() {
                   <FiX size={16} />
                 </button>
               )}
+
+              <AnimatePresence>
+                {suggestOpen && filters.search.trim().length >= 2 && suggestions.length > 0 && (
+                  <motion.div
+                    className="search-suggest"
+                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                  >
+                    {suggestions.map((b, i) => (
+                      <motion.button
+                        key={b._id}
+                        type="button"
+                        className="search-suggest-item"
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        onMouseDown={(e) => { e.preventDefault(); navigate(`/books/${b._id}`); }}
+                      >
+                        <span className="ss-thumb">
+                          {b.cover ? <img src={getCoverUrl(b.cover)} alt="" /> : <FiBookOpen size={14} />}
+                        </span>
+                        <span className="ss-info">
+                          <span className="ss-title">{b.title}</span>
+                          <span className="ss-author">by {b.author}</span>
+                        </span>
+                        <span className="ss-price">₹{b.pricePerWeek}</span>
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="catalogue-controls">
@@ -411,6 +464,69 @@ export default function Catalogue() {
         }
 
         .search-clear:hover { background: var(--cream-dark); color: var(--text-primary); }
+
+        .search-suggest {
+          position: absolute;
+          top: calc(100% + 8px);
+          left: 0;
+          right: 0;
+          background: var(--bg-card);
+          border: 1px solid rgba(196, 144, 106, 0.25);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-xl);
+          backdrop-filter: blur(20px);
+          padding: 6px;
+          z-index: 60;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          max-height: 360px;
+          overflow-y: auto;
+        }
+        .search-suggest-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 10px;
+          border-radius: var(--radius-md);
+          text-align: left;
+          width: 100%;
+          background: transparent;
+          transition: background var(--transition-fast);
+        }
+        .search-suggest-item:hover { background: rgba(196, 144, 106, 0.1); }
+        .ss-thumb {
+          width: 30px;
+          height: 40px;
+          border-radius: 4px;
+          overflow: hidden;
+          background: var(--cream-dark);
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--copper-light);
+          box-shadow: 0 1px 3px rgba(44, 24, 16, 0.12);
+        }
+        .ss-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .ss-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+        .ss-title {
+          font-family: var(--font-serif);
+          font-size: var(--text-sm);
+          font-weight: 600;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .ss-author { font-size: 11px; color: var(--text-muted); font-style: italic; }
+        .ss-price {
+          font-family: var(--font-serif);
+          font-size: var(--text-sm);
+          font-weight: 700;
+          color: var(--brown-rich);
+          flex-shrink: 0;
+        }
 
         .catalogue-controls {
           display: flex;
