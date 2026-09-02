@@ -13,7 +13,14 @@ const getBooks = async (req, res) => {
     const query = { isActive: true };
 
     if (search) {
-      query.$text = { $search: search };
+      const escaped = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const rx = new RegExp(escaped, 'i');
+      query.$or = [
+        { title: rx },
+        { author: rx },
+        { description: rx },
+        { tags: rx },
+      ];
     }
     if (genre) query.genre = genre;
     if (language) query.language = language;

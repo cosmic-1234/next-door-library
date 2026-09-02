@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FiBook, FiClock, FiCheckCircle, FiAlertCircle, FiHeart, FiUser, FiBookOpen, FiXCircle, FiHelpCircle, FiEdit2 } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
+  const [poppingId, setPoppingId] = useState(null);
 
   const [supportSubject, setSupportSubject] = useState('');
   const [supportCategory, setSupportCategory] = useState('other');
@@ -46,8 +47,7 @@ export default function Dashboard() {
     load();
   }, []);
 
-  const handleReturn = async (rentalId) => {
-    try {
+  const handleReturn = async (rentalId) => {    try {
       await api.patch(`/rentals/${rentalId}/return-request`);
       setRentals(prev => prev.map(r => r._id === rentalId ? { ...r, status: 'returned' } : r));
       toast.success('Book marked as returned!');
