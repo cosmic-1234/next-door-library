@@ -1055,9 +1055,10 @@ export default function BookDetail() {
           {/* Cover */}
           <motion.div
             className="book-detail-cover-wrap"
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, rotateY: -72 }}
+            animate={{ opacity: 1, rotateY: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+            style={{ transformPerspective: 1400, transformOrigin: 'left center' }}
           >
             <div className="book-detail-cover">
               {imgSrc && !imageError ? (
@@ -1083,7 +1084,7 @@ export default function BookDetail() {
             className="book-detail-info"
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.12 }}
           >
             <div className="book-detail-tags">
               <span className="badge badge-genre">{book.genre}</span>

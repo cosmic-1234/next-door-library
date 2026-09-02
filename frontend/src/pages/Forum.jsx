@@ -9,15 +9,16 @@ import { getCoverUrl } from '../utils/imageUrl';
 
 const CATEGORIES = ['Discussion', 'Recommendation', 'Review', 'Question', 'General'];
 
-function PostCard({ post, onLike, onOpen }) {
+function PostCard({ post, onLike, onOpen, index = 0 }) {
   const { user } = useAuth();
   const isLiked = user && post.likes?.includes(user._id);
 
   return (
     <motion.div
       className="forum-post-card"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30, delay: Math.min(index * 0.05, 0.4) }}
     >
       <div className="forum-post-header">
         <div className="forum-author">
@@ -269,7 +270,7 @@ export default function Forum() {
         ) : (
           <div className="forum-posts-grid">
             {posts.map((post, i) => (
-              <PostCard key={post._id} post={post} onLike={handleLike} onOpen={setSelectedPost} />
+              <PostCard key={post._id} post={post} onLike={handleLike} onOpen={setSelectedPost} index={i} />
             ))}
           </div>
         )}

@@ -208,10 +208,10 @@ export default function Catalogue() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30, opacity: { duration: 0.2 } }}
           >
             <div className="container">
-              <div className="filter-grid">
+              <div className="filter-grid animate-fadeInUp">
                 <div className="form-group">
                   <label className="form-label">City / Location</label>
                   <select className="form-input form-select" value={filters.location} onChange={e => updateFilter('location', e.target.value)}>

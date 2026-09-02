@@ -277,7 +277,7 @@ export default function AdminRentals() {
                 const isUpdating = updatingId === rental._id;
 
                 return (
-                  <motion.tr key={rental._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}>
+                  <motion.tr key={rental._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 32, delay: Math.min(i * 0.03, 0.35) }}>
                     <td>
                       <p style={{ fontWeight: 500 }}>{rental.user?.name}</p>
                       <p style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>

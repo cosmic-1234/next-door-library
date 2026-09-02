@@ -407,7 +407,7 @@ export default function AdminBooks() {
               ) : books.length === 0 ? (
                 <tr><td colSpan={12} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>No books found</td></tr>
               ) : books.map((book, i) => (
-                <motion.tr key={book._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
+                <motion.tr key={book._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 32, delay: Math.min(i * 0.03, 0.35) }}>
                   <td>
                     <div style={{ width: '36px', height: '48px', borderRadius: '4px', overflow: 'hidden', background: 'var(--cream-dark)' }}>
                       {book.cover ? (

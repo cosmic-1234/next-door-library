@@ -480,27 +480,31 @@ export default function Navbar() {
         .navbar-iimu-pill {
           display: flex;
           align-items: center;
-          gap: 6px;
-          height: 34px;
-          padding: 0 12px;
+          gap: 7px;
+          height: 36px;
+          padding: 0 15px;
           border-radius: var(--radius-full);
-          background: rgba(122, 143, 110, 0.12);
-          border: 1px solid rgba(122, 143, 110, 0.28);
+          background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(247,240,227,0.55));
+          border: 1px solid rgba(196, 144, 106, 0.4);
           color: var(--brown-rich);
           font-family: var(--font-sans);
-          font-size: 12px;
-          font-weight: 500;
+          font-size: 12.5px;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+          white-space: nowrap;
           cursor: pointer;
-          transition: all var(--transition-fast);
+          box-shadow: 0 1px 2px rgba(44, 24, 16, 0.05);
+          transition: transform var(--transition-fast), box-shadow var(--transition-base), border-color var(--transition-base), background var(--transition-base);
         }
         .navbar-iimu-pill:hover {
-          background: rgba(122, 143, 110, 0.22);
-          border-color: var(--sage);
           transform: translateY(-1px);
+          border-color: var(--copper);
+          box-shadow: 0 6px 16px rgba(196, 144, 106, 0.22);
         }
+        .navbar-iimu-pill:active { transform: translateY(0) scale(0.97); }
         .iimu-dot {
-          font-size: 10px;
-          color: var(--sage);
+          font-size: 11px;
+          color: var(--gold);
           line-height: 1;
         }
 
@@ -510,24 +514,27 @@ export default function Navbar() {
         .navbar-location-btn {
           display: flex;
           align-items: center;
-          gap: 6px;
-          height: 34px;
-          padding: 0 12px;
+          gap: 7px;
+          height: 36px;
+          padding: 0 13px;
           border-radius: var(--radius-full);
-          background: rgba(196, 144, 106, 0.1);
-          border: 1px solid rgba(196, 144, 106, 0.22);
+          background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(247,240,227,0.55));
+          border: 1px solid rgba(196, 144, 106, 0.4);
           color: var(--brown-rich);
           font-family: var(--font-sans);
           font-size: 12.5px;
-          font-weight: 500;
+          font-weight: 600;
+          white-space: nowrap;
           cursor: pointer;
-          transition: all var(--transition-fast);
+          box-shadow: 0 1px 2px rgba(44, 24, 16, 0.05);
+          transition: transform var(--transition-fast), box-shadow var(--transition-base), border-color var(--transition-base), background var(--transition-base);
         }
         .navbar-location-btn:hover {
-          background: rgba(196, 144, 106, 0.18);
-          border-color: var(--copper);
           transform: translateY(-1px);
+          border-color: var(--copper);
+          box-shadow: 0 6px 16px rgba(196, 144, 106, 0.22);
         }
+        .navbar-location-btn:active { transform: translateY(0) scale(0.97); }
         .navbar-loc-dropdown {
           position: absolute;
           top: calc(100% + 8px);
