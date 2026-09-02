@@ -70,9 +70,9 @@ export default function Home() {
 
         <motion.div className="hero-content container" style={{ opacity: heroOpacity }}>
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
           >
             <span className="hero-eyebrow">
               {selectedLocation === 'IIM Udaipur' ? "IIM Udaipur's Community Library" : "Nagpur's Community Library"}
@@ -116,9 +116,9 @@ export default function Home() {
 
           <motion.div
             className="hero-visual"
-            initial={{ opacity: 0, x: 60 }}
+            initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32, delay: 0.12 }}
           >
             <div className="hero-book-stack">
               {['#C4906A', '#8A9A7B', '#3B2314', '#D4A882', '#7A8F6E'].map((color, i) => (
@@ -182,7 +182,7 @@ export default function Home() {
 
             <div className="featured-grid">
               {featuredBooks.slice(0, 4).map((book, i) => (
-                <BookCard key={book._id} book={book} delay={i * 0.1} />
+                <BookCard key={book._id} book={book} delay={i * 0.05} />
               ))}
             </div>
 
@@ -241,7 +241,7 @@ export default function Home() {
                 className="how-card"
                 initial={{ opacity: 0, y: 40 }}
                 animate={howInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30, delay: i * 0.05 }}
               >
                 <div className="how-step-num">{item.step}</div>
                 <div className="how-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--copper)' }}>
@@ -287,7 +287,7 @@ export default function Home() {
                   initial={{ opacity: 0, x: 30 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30, delay: i * 0.05 }}
                 >
                   <div className="why-item-icon" style={{ color: 'var(--copper)' }}>
                     <item.icon size={26} />
@@ -631,7 +631,7 @@ export default function Home() {
           padding: 32px 24px;
           border: 1px solid rgba(196, 144, 106, 0.12);
           position: relative;
-          transition: all 0.3s ease;
+          transition: all var(--transition-base);
         }
 
         .how-card:hover {
@@ -693,7 +693,7 @@ export default function Home() {
           background: var(--bg-card);
           border-radius: var(--radius-lg);
           border: 1px solid rgba(196, 144, 106, 0.1);
-          transition: all 0.3s ease;
+          transition: all var(--transition-base);
         }
 
         .why-item:hover {

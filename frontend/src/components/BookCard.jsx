@@ -27,9 +27,10 @@ export default function BookCard({ book, delay = 0 }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30, delay }}
+      whileTap={{ scale: 0.985 }}
     >
       <Link to={`/books/${book._id}`} className="book-card">
         <div className="book-card-cover-wrap">
